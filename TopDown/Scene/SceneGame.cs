@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.IO;
 using System.Xml.Serialization;
 using TopDownGrpcClient;
+using System.Threading.Tasks;
 
 namespace TopDown
 {
@@ -115,20 +116,25 @@ namespace TopDown
             // Send "change position" message to server (send speed)
             // Server code: check intersection //
 
-            var mgPos = Player.Rectangle.Center + Control.GetMousePosition() + GameData.Camera / GameData.Scale;
+            //var mgPos = Player.Rectangle.Center + Control.GetMousePosition() + GameData.Camera / GameData.Scale;
 
-            Messages.SendControlState(
-                Player.Speed.X < 0,
-                Player.Speed.X > 0,
-                Player.Speed.Y < 0,
-                Player.Speed.Y > 0,
-                mgPos.X,
-                mgPos.Y,
-                Mouse.GetState().LeftButton == ButtonState.Pressed,
-                Mouse.GetState().RightButton == ButtonState.Pressed);
+            //Messages.SendControlState(
+            //    Player.Speed.X < 0,
+            //    Player.Speed.X > 0,
+            //    Player.Speed.Y < 0,
+            //    Player.Speed.Y > 0,
+            //    mgPos.X,
+            //    mgPos.Y,
+            //    Mouse.GetState().LeftButton == ButtonState.Pressed,
+            //    Mouse.GetState().RightButton == ButtonState.Pressed);
 
-            var pos = Messages.GetEntityPositions().First();
-            Player.Rectangle = Player.Rectangle + new Vector2(pos.Item1, pos.Item2) - Player.Rectangle.Min;
+            //Messages.GetEntityPositions().ContinueWith(x => { 
+            //    var _pos = x.Result.First();
+            //    lock (Player)
+            //    {
+                    
+            //    }
+            //});
 
             //Player.Move();
             //var moveToCorrect = Vector2.Zero;
@@ -310,6 +316,24 @@ namespace TopDown
             // Get players from server
             Player = _players.First().Value;
             Player.Rectangle -= Player.Rectangle.Min;
+
+            Messages.GetEntityPositions();
+            Messages.RetrieveEntitiesEvent += e => {
+                Player.Rectangle = Player.Rectangle + new Vector2(e.EntityPositions.First().Item1, e.EntityPositions.First().Item2) - Player.Rectangle.Min;
+
+                var mgPos = Player.Rectangle.Center + Control.GetMousePosition() + GameData.Camera / GameData.Scale;
+
+                Messages.SendControlState(
+                    Player.Speed.X < 0,
+                    Player.Speed.X > 0,
+                    Player.Speed.Y < 0,
+                    Player.Speed.Y > 0,
+                    mgPos.X,
+                    mgPos.Y,
+                    Mouse.GetState().LeftButton == ButtonState.Pressed,
+                    Mouse.GetState().RightButton == ButtonState.Pressed);
+            };
+
             /////////////////////////
             ShowWeaponChoose();
             _lastShotTime = 0;

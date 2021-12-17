@@ -1,9 +1,10 @@
 ﻿using System;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using Grpc.Net.Client;
+using Grpc.Core;
 using TopDownGrpcGameServer;
 
 namespace TopDownGrpcClient
@@ -12,9 +13,12 @@ namespace TopDownGrpcClient
     {
         static TopDownServer.TopDownServerClient _client;
         static Grpc.Core.AsyncClientStreamingCall<ControlStateRequest, Google.Protobuf.WellKnownTypes.Empty> sendControllCall;
+        public delegate void RetrieveEntitiesDelegate(RetrieveEntitiesEventArgs e);
+        public static event RetrieveEntitiesDelegate RetrieveEntitiesEvent;
+
         public static void Initialize()
         {
-            var _chanel = GrpcChannel.ForAddress("http://localhost:5000");
+            var _chanel = GrpcChannel.ForAddress("http://26.104.61.15:5000");
             _client = new TopDownServer.TopDownServerClient(_chanel);
             sendControllCall = _client.UpdateUserState();
         }
@@ -43,10 +47,15 @@ namespace TopDownGrpcClient
             sendControllCall.RequestStream.WriteAsync(controlStateReq);
         }
 
-        public static List<(float, float)> GetEntityPositions()
+        public static async Task GetEntityPositions()
         {
-            var entitiyPositions = _client.RetrieveEntites(new Google.Protobuf.WellKnownTypes.Empty());
-            return entitiyPositions.Vectors.Select(p => (p.X, p.Y)).ToList();
+            using var retrieveControlCall = _client.RetrieveEntites(new Google.Protobuf.WellKnownTypes.Empty());
+            await foreach (var message in retrieveControlCall.ResponseStream.ReadAllAsync())
+            {
+                RetrieveEntitiesEvent?.Invoke(new RetrieveEntitiesEventArgs() {
+                    EntityPositions =  message.Vectors.Select(p => (p.X, p.Y)).ToList() 
+                });
+            }
         }
     }
 }
