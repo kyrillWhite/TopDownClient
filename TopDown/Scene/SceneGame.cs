@@ -7,6 +7,7 @@ using Microsoft.Xna.Framework.Input;
 using System.Text.Json;
 using System.IO;
 using System.Xml.Serialization;
+using TopDownGrpcClient;
 
 namespace TopDown
 {
@@ -113,28 +114,44 @@ namespace TopDown
 
             // Send "change position" message to server (send speed)
             // Server code: check intersection //
-            Player.Move();
-            var moveToCorrect = Vector2.Zero;
-            var interWalls = Map._walls.FindAll(w => Player.HitCircle.Intersects(w.Rectangle));
-            foreach (var interWall in interWalls)
-            {
-                var potentCircPos = Player.HitCircle.Location;
-                var nearestPoint = new Vector2(
-                    Math.Max(interWall.Rectangle.Min.X, Math.Min(potentCircPos.X, interWall.Rectangle.Max.X)),
-                    Math.Max(interWall.Rectangle.Min.Y, Math.Min(potentCircPos.Y, interWall.Rectangle.Max.Y)));
-                var rayToNearest = nearestPoint - potentCircPos;
-                var overlap = Player.HitCircle.Radius - rayToNearest.Length();
-                if (float.IsNaN(overlap))
-                {
-                    overlap = 0;
-                }
-                if (overlap > 0)
-                {
-                    rayToNearest.Normalize();
-                    moveToCorrect += -rayToNearest * overlap;
-                    Player.Translate(-rayToNearest * overlap);
-                }
-            }
+
+            var mgPos = Player.Rectangle.Center + Control.GetMousePosition() + GameData.Camera / GameData.Scale;
+
+            Messages.SendControlState(
+                Player.Speed.X < 0,
+                Player.Speed.X > 0,
+                Player.Speed.Y < 0,
+                Player.Speed.Y > 0,
+                mgPos.X,
+                mgPos.Y,
+                Mouse.GetState().LeftButton == ButtonState.Pressed,
+                Mouse.GetState().RightButton == ButtonState.Pressed);
+
+            var pos = Messages.GetEntityPositions().First();
+            Player.Rectangle = Player.Rectangle + new Vector2(pos.Item1, pos.Item2) - Player.Rectangle.Min;
+
+            //Player.Move();
+            //var moveToCorrect = Vector2.Zero;
+            //var interWalls = Map._walls.FindAll(w => Player.HitCircle.Intersects(w.Rectangle));
+            //foreach (var interWall in interWalls)
+            //{
+            //    var potentCircPos = Player.HitCircle.Location;
+            //    var nearestPoint = new Vector2(
+            //        Math.Max(interWall.Rectangle.Min.X, Math.Min(potentCircPos.X, interWall.Rectangle.Max.X)),
+            //        Math.Max(interWall.Rectangle.Min.Y, Math.Min(potentCircPos.Y, interWall.Rectangle.Max.Y)));
+            //    var rayToNearest = nearestPoint - potentCircPos;
+            //    var overlap = Player.HitCircle.Radius - rayToNearest.Length();
+            //    if (float.IsNaN(overlap))
+            //    {
+            //        overlap = 0;
+            //    }
+            //    if (overlap > 0)
+            //    {
+            //        rayToNearest.Normalize();
+            //        moveToCorrect += -rayToNearest * overlap;
+            //        Player.Translate(-rayToNearest * overlap);
+            //    }
+            //}
             // Send change position from server (send moveToCorrect)
             ///////////////////////////////
             // Get positions of players
@@ -292,6 +309,7 @@ namespace TopDown
             //////////////////////////
             // Get players from server
             Player = _players.First().Value;
+            Player.Rectangle -= Player.Rectangle.Min;
             /////////////////////////
             ShowWeaponChoose();
             _lastShotTime = 0;
