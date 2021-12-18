@@ -44,13 +44,19 @@ namespace TopDownGrpcClient
 
         public static async Task GetEntityPositions()
         {
-            using var retrieveControlCall = _client.RetrieveEntites(new Google.Protobuf.WellKnownTypes.Empty());
+            using var retrieveControlCall = _client.RetrieveEntities(new Google.Protobuf.WellKnownTypes.Empty());
             await foreach (var message in retrieveControlCall.ResponseStream.ReadAllAsync())
             {
                 RetrieveEntitiesEvent?.Invoke(new RetrieveEntitiesEventArgs() {
                     EntityPositions =  message.Vectors.Select(p => (p.LastInputId, p.X, p.Y)).ToList() 
                 });
             }
+        }
+
+        public static string GetMap()
+        {
+            var getMapCall = _client.GetMap(new Google.Protobuf.WellKnownTypes.Empty());
+            return getMapCall.MapStr;
         }
     }
 }

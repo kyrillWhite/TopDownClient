@@ -21,7 +21,7 @@ namespace TopDown
         private Map _map; // To Server
         private Dictionary<string, Bullet> _bullets = new Dictionary<string, Bullet>(); // To Server
         private Dictionary<string, Player> _players = new Dictionary<string, Player>(); // To Server
-        private List<int> _rounds = new List<int>(new[]{0, 0}); // Only to server
+        private List<int> _rounds = new List<int>(new[] { 0, 0 }); // Only to server
         private int _allRounds = 0; // Only to server
         private Label _score = new Label(new Vector2(20, 20), "0 : 0", Color.Black, 0.99f, true);
         private Label _timer = new Label(new Vector2(600, 20), "2:00", Color.Black, 0.99f, true);
@@ -44,7 +44,15 @@ namespace TopDown
 
         public override void Initialize(MainGame game)
         {
-            LoadMap("map1.xml");
+            var mapXml = Messages.GetMap();
+            if (string.IsNullOrEmpty(mapXml)) 
+            {
+                // Выход
+            }
+            else
+            {
+                LoadMap(mapXml);
+            }
             //_map = new Map("C:/Users/kirill/Desktop/Map/map.txt", 2);
             //SaveMap("map1.xml");
 
@@ -121,7 +129,7 @@ namespace TopDown
             lock (_inputDict)
             {
                 Messages.SendControlState(_inputDict.Where(i => i.Key > _lastSendedInputId).ToDictionary(i => i.Key, i => i.Value));
-                _lastSendedInputId = _inputDict.Count == 0 ? 0 :_inputDict.Max(i => i.Key);
+                _lastSendedInputId = _inputDict.Count == 0 ? 0 : _inputDict.Max(i => i.Key);
             }
 
             // Send "change position" message to server (send speed)
@@ -173,14 +181,16 @@ namespace TopDown
             // Send change position from server (send moveToCorrect)
             ///////////////////////////////
             // Get positions of players
-
-            var mPos = Control.GetMousePosition();
-            var cmPos = mPos - GameData.WindowSize / 2;
-            GameData.Camera = Player.Rectangle.Center + cmPos * Constants.MaxCameraOffset;
+            lock (Player)
+            {
+                var mPos = Control.GetMousePosition();
+                var cmPos = mPos - GameData.WindowSize / 2;
+                GameData.Camera = Player.Rectangle.Center + cmPos * Constants.MaxCameraOffset;
+            }
             if (!_pause && !_dead && !_start)
             {
                 var newBullets = ShootControl();
-                foreach(var newBullet in newBullets)
+                foreach (var newBullet in newBullets)
                 {
                     _bullets.Add(Guid.NewGuid().ToString(), newBullet);
                     // Send new bullets to server (id, speed, start position, end position, wall)
@@ -213,7 +223,7 @@ namespace TopDown
                                           p.Value.HitCircle.Intersects(b.Value.HitCircle)
                                           group (p.Key, b.Key) by b.Key into pb
                                           select pb.First()).ToList();
-            interPlayersAndBullets.ForEach(pb => { _players[pb.Item1].Hp -= _bullets[pb.Item2].Damage;});
+            interPlayersAndBullets.ForEach(pb => { _players[pb.Item1].Hp -= _bullets[pb.Item2].Damage; });
 
             removedBulletsId.AddRange(interPlayersAndBullets.Select(pb => pb.Item2));
             var deadPlayersId = new List<string>(_players.Where(p => p.Value.Hp <= 0).ToDictionary(p => p.Key).Keys);
@@ -275,7 +285,7 @@ namespace TopDown
                     }
                 }
             }
-            
+
             ////////////////////////
             ///Send reinitialize command + new score
 
@@ -329,9 +339,13 @@ namespace TopDown
             Player.Rectangle -= Player.Rectangle.Min;
 
             Messages.GetEntityPositions();
-            Messages.RetrieveEntitiesEvent += e => {
+            Messages.RetrieveEntitiesEvent += e =>
+            {
                 var playerData = e.EntityPositions.First();
-                Player.Rectangle = Player.Rectangle + new Vector2(playerData.Item2, playerData.Item3) - Player.Rectangle.Min;
+                lock (Player)
+                {
+                    Player.Rectangle = Player.Rectangle + new Vector2(playerData.Item2, playerData.Item3) - Player.Rectangle.Min;
+                }
                 lock (_inputDict)
                 {
                     var deletedInputs = new List<int>();
@@ -350,7 +364,10 @@ namespace TopDown
                             {
                                 dirrection.Normalize();
                             }
-                            Player.Rectangle += dirrection * Constants.MaxMoveSpeed;
+                            lock (Player)
+                            {
+                                Player.Rectangle += dirrection * Constants.MaxMoveSpeed;
+                            }
                         }
                     }
                     deletedInputs.ForEach(inid => _inputDict.Remove(inid));
@@ -378,28 +395,28 @@ namespace TopDown
                 new Circle(new Vector2(Constants.EntitySize.X / 2, Constants.EntitySize.Y - Constants.EntitySize.X / 2),
                 Constants.EntitySize.X / 2),
                 new RectangleF(Vector2.Zero, Constants.EntitySize) + position)
-            { Team = team};
+            { Team = team };
         }
 
-        public void LoadMap(string path)
+        public void LoadMap(string mapXml)
         {
             var formatter = new XmlSerializer(typeof(Map));
-            using (FileStream fs = new FileStream(path, FileMode.Open))
+            using (var reader = new StringReader(mapXml))
             {
-                Map = (Map)formatter.Deserialize(fs);
+                Map = (Map)formatter.Deserialize(reader);
             }
             GameData.GameObjects.AddRange(Map._grounds);
             GameData.GameObjects.AddRange(Map._walls);
         }
 
-        public void SaveMap(string name)
-        {
-            var formatter = new XmlSerializer(typeof(Map));
-            using (FileStream fs = new FileStream(name, FileMode.OpenOrCreate))
-            {
-                formatter.Serialize(fs, Map);
-            }
-        }
+        //public void SaveMap(string name)
+        //{
+        //    var formatter = new XmlSerializer(typeof(Map));
+        //    using (FileStream fs = new FileStream(name, FileMode.OpenOrCreate))
+        //    {
+        //        formatter.Serialize(fs, Map);
+        //    }
+        //}
 
         private void ESCPress()
         {
@@ -455,7 +472,8 @@ namespace TopDown
             {
                 dirrection.X += 1.0f;
             }
-            if (dirrection.X != 0 && dirrection.Y != 0) {
+            if (dirrection.X != 0 && dirrection.Y != 0)
+            {
                 dirrection.Normalize();
             }
 
@@ -475,12 +493,12 @@ namespace TopDown
             Player.Rectangle += dirrection * Constants.MaxMoveSpeed;
             //Player.Speed = dirrection * Constants.MaxMoveSpeed;
         }
-    
+
         private List<Bullet> ShootControl()
         {
             var bullets = new List<Bullet>();
             // Get count of bullet
-            if (_player.CurBulletsCount != 0 && Mouse.GetState().LeftButton == ButtonState.Pressed) 
+            if (_player.CurBulletsCount != 0 && Mouse.GetState().LeftButton == ButtonState.Pressed)
             {
                 if (_roundTime - _lastShotTime >= _gun.ShootDelay)
                 {
@@ -519,7 +537,7 @@ namespace TopDown
             {
                 var rRect = UiObjects["reload_bar"].Rectangle;
                 UiObjects["reload_bar"].Rectangle = new RectangleF(rRect.Min,
-                    new Vector2(rRect.Min.X + Constants.HpBarWidth * 
+                    new Vector2(rRect.Min.X + Constants.HpBarWidth *
                     (float)(_roundTime - _startReloadTime) / (float)_gun.ReloadTime, rRect.Max.Y));
             }
             return bullets;
