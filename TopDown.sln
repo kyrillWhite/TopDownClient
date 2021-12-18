@@ -5,7 +5,9 @@ VisualStudioVersion = 16.0.31911.196
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TopDown", "TopDown\TopDown.csproj", "{3BEB9C1D-0520-48B0-8E99-D3F6D24B644C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TopDownGrpcClient", "TopDownGrpcClient\TopDownGrpcClient.csproj", "{2D50CDD2-E037-4C59-B53C-E30237D8C8A6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TopDownGrpcClient", "TopDownGrpcClient\TopDownGrpcClient.csproj", "{2D50CDD2-E037-4C59-B53C-E30237D8C8A6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TopDownLibrary", "TopDownLibrary\TopDownLibrary.csproj", "{E4B9F1C7-8930-4F76-BE92-27D7AD90505F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{2D50CDD2-E037-4C59-B53C-E30237D8C8A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2D50CDD2-E037-4C59-B53C-E30237D8C8A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2D50CDD2-E037-4C59-B53C-E30237D8C8A6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E4B9F1C7-8930-4F76-BE92-27D7AD90505F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E4B9F1C7-8930-4F76-BE92-27D7AD90505F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E4B9F1C7-8930-4F76-BE92-27D7AD90505F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E4B9F1C7-8930-4F76-BE92-27D7AD90505F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

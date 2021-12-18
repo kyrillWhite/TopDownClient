@@ -8,7 +8,9 @@ using System.Text.Json;
 using System.IO;
 using System.Xml.Serialization;
 using TopDownGrpcClient;
+using TopDownLibrary;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
 
 namespace TopDown
 {
@@ -33,6 +35,9 @@ namespace TopDown
         private double _startReloadTime = 0.0f; // Only to server
         private double _lastShotTime = 0.0f; // Only to server
         private Gun _gun;
+        private Dictionary<int, Input> _inputDict = new Dictionary<int, Input>();
+        private int _inputId = 0;
+        private int _lastSendedInputId = 0;
 
         public Player Player { get => _player; set => _player = value; }
         public Map Map { get => _map; set => _map = value; }
@@ -113,10 +118,17 @@ namespace TopDown
                 MoveControl();
             }
 
+            lock (_inputDict)
+            {
+                Messages.SendControlState(_inputDict.Where(i => i.Key > _lastSendedInputId).ToDictionary(i => i.Key, i => i.Value));
+                _lastSendedInputId = _inputDict.Count == 0 ? 0 :_inputDict.Max(i => i.Key);
+            }
+
             // Send "change position" message to server (send speed)
             // Server code: check intersection //
 
             //var mgPos = Player.Rectangle.Center + Control.GetMousePosition() + GameData.Camera / GameData.Scale;
+
 
             //Messages.SendControlState(
             //    Player.Speed.X < 0,
@@ -132,7 +144,7 @@ namespace TopDown
             //    var _pos = x.Result.First();
             //    lock (Player)
             //    {
-                    
+
             //    }
             //});
 
@@ -165,7 +177,6 @@ namespace TopDown
             var mPos = Control.GetMousePosition();
             var cmPos = mPos - GameData.WindowSize / 2;
             GameData.Camera = Player.Rectangle.Center + cmPos * Constants.MaxCameraOffset;
-
             if (!_pause && !_dead && !_start)
             {
                 var newBullets = ShootControl();
@@ -319,19 +330,38 @@ namespace TopDown
 
             Messages.GetEntityPositions();
             Messages.RetrieveEntitiesEvent += e => {
-                Player.Rectangle = Player.Rectangle + new Vector2(e.EntityPositions.First().Item1, e.EntityPositions.First().Item2) - Player.Rectangle.Min;
+                var playerData = e.EntityPositions.First();
+                Player.Rectangle = Player.Rectangle + new Vector2(playerData.Item2, playerData.Item3) - Player.Rectangle.Min;
+                lock (_inputDict)
+                {
+                    var deletedInputs = new List<int>();
+                    foreach (var input in _inputDict)
+                    {
+                        if (input.Key <= playerData.Item1)
+                        {
+                            deletedInputs.Add(input.Key);
+                        }
+                        else
+                        {
+                            var dirrection = Vector2.Zero;
+                            dirrection.X += input.Value.DirX;
+                            dirrection.Y += input.Value.DirY;
+                            if (dirrection.X != 0 && dirrection.Y != 0)
+                            {
+                                dirrection.Normalize();
+                            }
+                            Player.Rectangle += dirrection * Constants.MaxMoveSpeed;
+                        }
+                    }
+                    deletedInputs.ForEach(inid => _inputDict.Remove(inid));
+
+                    //lock (_inputDict)
+                    //{
+                    //    Messages.SendControlState(_inputDict);
+                    //}
+                }
 
                 var mgPos = Player.Rectangle.Center + Control.GetMousePosition() + GameData.Camera / GameData.Scale;
-
-                Messages.SendControlState(
-                    Player.Speed.X < 0,
-                    Player.Speed.X > 0,
-                    Player.Speed.Y < 0,
-                    Player.Speed.Y > 0,
-                    mgPos.X,
-                    mgPos.Y,
-                    Mouse.GetState().LeftButton == ButtonState.Pressed,
-                    Mouse.GetState().RightButton == ButtonState.Pressed);
             };
 
             /////////////////////////
@@ -428,7 +458,22 @@ namespace TopDown
             if (dirrection.X != 0 && dirrection.Y != 0) {
                 dirrection.Normalize();
             }
-            Player.Speed = dirrection * Constants.MaxMoveSpeed;
+
+            lock (_inputDict)
+            {
+                _inputDict.Add(_inputId, new Input()
+                {
+                    DirX = dirrection.X == 0 ? 0 : (dirrection.X > 0 ? 1 : -1),
+                    DirY = dirrection.Y == 0 ? 0 : (dirrection.Y > 0 ? 1 : -1),
+                    GlobalMousePosX = 0,
+                    GlobalMousePosY = 0,
+                    LeftMouse = false,
+                    RightMouse = false,
+                });
+            }
+            _inputId++;
+            Player.Rectangle += dirrection * Constants.MaxMoveSpeed;
+            //Player.Speed = dirrection * Constants.MaxMoveSpeed;
         }
     
         private List<Bullet> ShootControl()
