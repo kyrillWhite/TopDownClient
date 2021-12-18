@@ -6,6 +6,7 @@ using System.Text;
 using Grpc.Net.Client;
 using Grpc.Core;
 using TopDownGrpcGameServer;
+using TopDownLibrary;
 
 namespace TopDownGrpcClient
 {
@@ -23,28 +24,22 @@ namespace TopDownGrpcClient
             sendControllCall = _client.UpdateUserState();
         }
 
-        public static void SendControlState(
-            bool left,
-            bool right,
-            bool up,
-            bool down,
-            float globalMousePosX,
-            float globalMousePosY,
-            bool leftMouse,
-            bool rightMouse)
+        public static void SendControlState(Dictionary<int, Input> inputs)
         {
-            var controlStateReq = new ControlStateRequest()
-            {
-                Left = left,
-                Right = right,
-                Up = up,
-                Down = down,
-                GlobalMousePosX = globalMousePosX,
-                GlobalMousePosY = globalMousePosY,
-                LeftMouse = leftMouse,
-                RightMouse = rightMouse,
-            };
-            sendControllCall.RequestStream.WriteAsync(controlStateReq);
+                foreach (var input in inputs.ToList())
+                {
+                    var controlStateReq = new ControlStateRequest()
+                    {
+                        DirX = input.Value.DirX,
+                        DirY = input.Value.DirY,
+                        GlobalMousePosX = input.Value.GlobalMousePosX,
+                        GlobalMousePosY = input.Value.GlobalMousePosY,
+                        LeftMouse = input.Value.LeftMouse,
+                        RightMouse = input.Value.RightMouse,
+                        InputId = input.Key,
+                    };
+                    sendControllCall.RequestStream.WriteAsync(controlStateReq);
+                }
         }
 
         public static async Task GetEntityPositions()
@@ -53,7 +48,7 @@ namespace TopDownGrpcClient
             await foreach (var message in retrieveControlCall.ResponseStream.ReadAllAsync())
             {
                 RetrieveEntitiesEvent?.Invoke(new RetrieveEntitiesEventArgs() {
-                    EntityPositions =  message.Vectors.Select(p => (p.X, p.Y)).ToList() 
+                    EntityPositions =  message.Vectors.Select(p => (p.LastInputId, p.X, p.Y)).ToList() 
                 });
             }
         }
