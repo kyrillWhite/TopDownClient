@@ -14,5 +14,7 @@ namespace TopDownLibrary
         public float GlobalMousePosY { get; set; }
         public bool LeftMouse { get; set; }
         public bool RightMouse { get; set; }
+        public int SimulationTime { get; set; }
+        public long Time { get; set; }
     }
 }

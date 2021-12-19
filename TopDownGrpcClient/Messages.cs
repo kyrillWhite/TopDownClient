@@ -32,50 +32,49 @@ namespace TopDownGrpcClient
             sendControllCall = _client.UpdateUserState();
         }
 
-        public static async void SendControlState(string playerId)
+        public static void SendControlState(List<Input> inputs, string playerId)
         {
             // if (  sendControllCall.GetStatus().StatusCode == )
-            while (true)
+
+            var controlStateRequest = new ControlStateRequest()
             {
-                if (GetPlayerInputsEvent == null) break;
-
-                PlayerInputsEventArgs inputsEventArgs = new PlayerInputsEventArgs();
-                GetPlayerInputsEvent.Invoke(inputsEventArgs);
-
-                var controlStateReq = new ControlStateRequest();
-                controlStateReq.PlayerMove.AddRange(inputsEventArgs.Inputs.OrderBy(x=>x.Key).Select(input => new PlayerMoveClient()
+                PlayerMove = new PlayerMoveClient()
                 {
-                    DirX = input.Value.DirX,
-                    DirY = input.Value.DirY,
-                    GlobalMousePosX = input.Value.GlobalMousePosX,
-                    GlobalMousePosY = input.Value.GlobalMousePosY,
-                    LeftMouse = input.Value.LeftMouse,
-                    RightMouse = input.Value.RightMouse,
-                    InputId = input.Key,
+                    DirX = inputs.Last().DirX,
+                    DirY = inputs.Last().DirY,
+                    GlobalMousePosX = inputs.Last().GlobalMousePosX,
+                    GlobalMousePosY = inputs.Last().GlobalMousePosY,
+                    LeftMouse = inputs.Last().LeftMouse,
+                    RightMouse = inputs.Last().RightMouse,
                     Id = playerId,
-                }));
+                    MsDuration = inputs.Last().SimulationTime,
+                    Time = inputs.Last().Time,
+                }
+            };
 
-                sendControllCall.RequestStream.WriteAsync(controlStateReq);
-
-                if (await sendControllCall.ResponseStream.MoveNext())
+            Task.Run(() =>
+            {
+                lock (sendControllCall)
                 {
+                    sendControllCall.RequestStream.WriteAsync(controlStateRequest).Wait();
+
+                    sendControllCall.ResponseStream.MoveNext().Wait();
+
                     var gameStateResponse = sendControllCall.ResponseStream.Current;
 
-                    foreach (var playerMoveServer in gameStateResponse.PlayerMoveServer)
+                    PlayerDataEvent?.Invoke(new PlayerDataEventArgs()
                     {
-                        PlayerDataEvent?.Invoke(new PlayerDataEventArgs()
-                        {
-                            LastId = playerMoveServer.LastInputId,
-                            X = playerMoveServer.Position.X,
-                            Y = playerMoveServer.Position.Y,
-                        });
-                    }
+                        Time = gameStateResponse.PlayerServerPosition.Time,
+                        X = gameStateResponse.PlayerServerPosition.Position.X,
+                        Y = gameStateResponse.PlayerServerPosition.Position.Y,
+                    });
+
                     RetrieveEntitiesEvent?.Invoke(new RetrieveEntitiesEventArgs()
                     {
                         EntityPositions = gameStateResponse.Entities.Select(p => (p.Id, p.Team, p.Position.X, p.Position.Y)).ToList()
                     });
                 }
-            }
+            });
         }
 
         //public static async Task GetEntityPositions()

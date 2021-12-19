@@ -38,9 +38,19 @@ namespace TopDown
         private double _startReloadTime = 0.0f; // Only to server
         private double _lastShotTime = 0.0f; // Only to server
         private Gun _gun;
-        private Dictionary<int, Input> _inputDict = new Dictionary<int, Input>();
+        private List<Input> _inputs = new List<Input>();
         private int _inputId = 0;
         private int _lastSendedInputId = 0;
+
+        public class PositionFromServer
+        {
+            public float X;
+            public float Y;
+            public long Time;
+        }
+        private DateTime _startFrameTime = DateTime.Now;
+        private TimeSpan _lastFrameDuration = TimeSpan.Zero;
+        private PositionFromServer _positionFromServer = null;
 
         public Player Player { get => _player; set => _player = value; }
         public Map Map { get => _map; set => _map = value; }
@@ -99,14 +109,16 @@ namespace TopDown
             InitialiseEntities();
             Messages.RetrieveEntitiesEvent += UpdateEntitiesPositions;
             Messages.PlayerDataEvent += UpdatePlayerPosition;
-            Messages.GetPlayerInputsEvent += GetPlayerPositionForServer;
-            Messages.SendControlState(_playerId);
+            //Messages.GetPlayerInputsEvent += GetPlayerPositionForServer;
+            //Messages.SendControlState(_playerId);
 
             base.Initialize(game);
         }
 
         public override void Update(MainGame game)
         {
+            _lastFrameDuration = DateTime.Now - _startFrameTime;
+            _startFrameTime = DateTime.Now;
 
             // Server code: time count
             if (!_finalScore)
@@ -137,8 +149,11 @@ namespace TopDown
             if (!_pause && !_start)
             {
                 MoveControl();
+
             }
-            
+
+
+
             //FixCollision();
             lock (Positions)
             {
@@ -178,7 +193,6 @@ namespace TopDown
                 var mPos = Control.GetMousePosition();
                 var cmPos = mPos - GameData.WindowSize / 2;
                 GameData.Camera = Player.Rectangle.Center + cmPos * Constants.MaxCameraOffset;
-                FixCollision();
             }
             if (!_pause && !_dead && !_start)
             {
@@ -378,7 +392,7 @@ namespace TopDown
                     var showTime = DateTime.Now.AddMilliseconds(-Constants.BufferDelayInterval);
                     var fP = Positions[player.Key].LastOrDefault(p => p.Item1 < showTime);
                     var sP = Positions[player.Key].FirstOrDefault(p => p.Item1 > showTime);
-                    
+
                     if (fP.Item1 == DateTime.MinValue)
                     {
                         fP = sP;
@@ -388,7 +402,7 @@ namespace TopDown
                         sP = fP;
                     }
 
-                    var ratio = (float)(sP.Item1 - fP.Item1).Ticks / (float)(showTime - fP.Item1).Ticks; 
+                    var ratio = (float)(sP.Item1 - fP.Item1).Ticks / (float)(showTime - fP.Item1).Ticks;
                     if (ratio != 0)
                     {
                         var ttt = 0;
@@ -403,54 +417,59 @@ namespace TopDown
         {
             lock (Player)
             {
-                if (Player == null)
-                {
-                    if (!_players.ContainsKey(e.Id))
-                    {
-                        return;
-                    }
-                    Player = _players[e.Id];
-                }
-                Player.Rectangle = Player.Rectangle + new Vector2(e.X, e.Y) - Player.Rectangle.Min;
+                _positionFromServer = new PositionFromServer();
+                _positionFromServer.X = e.X;
+                _positionFromServer.Y = e.Y;
+                _positionFromServer.Time = e.Time;
+
+                //if (Player == null)
+                //{
+                //    if (!_players.ContainsKey(e.Id))
+                //    {
+                //        return;
+                //    }
+                //    Player = _players[e.Id];
+                //}
+                //Player.Rectangle = Player.Rectangle + new Vector2(e.X, e.Y) - Player.Rectangle.Min;
             }
-            lock (_inputDict)
-            {
-                var deletedInputs = new List<int>();
-                foreach (var input in _inputDict.ToList().OrderBy(i => i.Key))
-                {
-                    if (input.Key <= e.LastId)
-                    {
-                        deletedInputs.Add(input.Key);
-                    }
-                    else
-                    {
-                        var dirrection = Vector2.Zero;
-                        dirrection.X += input.Value.DirX;
-                        dirrection.Y += input.Value.DirY;
-                        if (dirrection.X != 0 && dirrection.Y != 0)
-                        {
-                            dirrection.Normalize();
-                        }
-                        lock (Player)
-                        {
-                            Player.Rectangle += dirrection * Constants.MaxMoveSpeed;
-                            FixCollision();
-                        }
-                    }
-                }
-                deletedInputs.ForEach(inid => _inputDict.Remove(inid));
-            }
+            //lock (_inputs)
+            //{
+            //    var deletedInputs = new List<int>();
+            //    foreach (var input in _inputs.ToList().OrderBy(i => i.Key))
+            //    {
+            //        if (input.Key <= e.LastId)
+            //        {
+            //            deletedInputs.Add(input.Key);
+            //        }
+            //        else
+            //        {
+            //            var dirrection = Vector2.Zero;
+            //            dirrection.X += input.Value.DirX;
+            //            dirrection.Y += input.Value.DirY;
+            //            if (dirrection.X != 0 && dirrection.Y != 0)
+            //            {
+            //                dirrection.Normalize();
+            //            }
+            //            lock (Player)
+            //            {
+            //                Player.Rectangle += dirrection * Constants.MaxMoveSpeed * input.Value.SimulationTime;
+            //                FixCollision();
+            //            }
+            //        }
+            //    }
+            //    deletedInputs.ForEach(inid => _inputs.Remove(inid));
+            //}
         }
 
-        private void GetPlayerPositionForServer(PlayerInputsEventArgs e)
-        {
-            lock (_inputDict)
-            {
-                e.Inputs =_inputDict.Where(i => i.Key > _lastSendedInputId).ToDictionary(i => i.Key, i => i.Value);
-                
-                _lastSendedInputId = _inputDict.Count == 0 ? 0 : _inputDict.Max(i => i.Key);
-            }
-        }
+        //private void GetPlayerPositionForServer(PlayerInputsEventArgs e)
+        //{
+        //    lock (_inputs)
+        //    {
+        //        e.Inputs = _inputs.Where(i => i.Key > _lastSendedInputId).ToDictionary(i => i.Key, i => i.Value);
+
+        //        _lastSendedInputId = _inputs.Count == 0 ? 0 : _inputs.Max(i => i.Key);
+        //    }
+        //}
 
         private void FixCollision()
         {
@@ -541,50 +560,87 @@ namespace TopDown
 
         private void MoveControl()
         {
-            var dirrection = Vector2.Zero;
+            var currentDirection = Vector2.Zero;
             if (Keyboard.GetState().IsKeyDown(Keys.W) ||
                 Keyboard.GetState().IsKeyDown(Keys.Up))
             {
-                dirrection.Y -= 1.0f;
+                currentDirection.Y -= 1.0f;
             }
             if (Keyboard.GetState().IsKeyDown(Keys.S) ||
                 Keyboard.GetState().IsKeyDown(Keys.Down))
             {
-                dirrection.Y += 1.0f;
+                currentDirection.Y += 1.0f;
             }
             if (Keyboard.GetState().IsKeyDown(Keys.A) ||
                 Keyboard.GetState().IsKeyDown(Keys.Left))
             {
-                dirrection.X -= 1.0f;
+                currentDirection.X -= 1.0f;
             }
             if (Keyboard.GetState().IsKeyDown(Keys.D) ||
                 Keyboard.GetState().IsKeyDown(Keys.Right))
             {
-                dirrection.X += 1.0f;
+                currentDirection.X += 1.0f;
             }
-            if (dirrection.X != 0 && dirrection.Y != 0)
+            if (currentDirection.X != 0 && currentDirection.Y != 0)
             {
-                dirrection.Normalize();
+                currentDirection.Normalize();
             }
 
-            lock (_inputDict)
+            lock (_inputs)
             {
-                _inputDict.Add(_inputId, new Input()
+                _inputs.Add(new Input()
                 {
-                    DirX = dirrection.X == 0 ? 0 : (dirrection.X > 0 ? 1 : -1),
-                    DirY = dirrection.Y == 0 ? 0 : (dirrection.Y > 0 ? 1 : -1),
+                    DirX = currentDirection.X == 0 ? 0 : (currentDirection.X > 0 ? 1 : -1),
+                    DirY = currentDirection.Y == 0 ? 0 : (currentDirection.Y > 0 ? 1 : -1),
                     GlobalMousePosX = 0,
                     GlobalMousePosY = 0,
                     LeftMouse = false,
                     RightMouse = false,
+                    SimulationTime = _lastFrameDuration.Milliseconds,
+                    Time = _startFrameTime.ToFileTime(),
                 });
             }
-            _inputId++;
+            //_inputId++;
+
+
+            Messages.SendControlState(_inputs, _playerId);
+
+
             lock (Player)
             {
-                Player.Rectangle += dirrection * Constants.MaxMoveSpeed;
+                if (_positionFromServer is not null)
+                {
+                    //if (Player == null)
+                    //{
+                    //    if (!_players.ContainsKey(.Id))
+                    //    {
+                    //        return;
+                    //    }
+                    //    Player = _players[.Id];
+                    //}
+
+                    Player.Rectangle = Player.Rectangle + new Vector2(_positionFromServer.X, _positionFromServer.Y) - Player.Rectangle.Min;
+                    while (_inputs.Any() && _inputs.First().Time <= _positionFromServer.Time)
+                    {
+                        _inputs.RemoveAt(0);
+                    }
+                    foreach (var input in _inputs)
+                    {
+                        var direction = Vector2.Zero;
+                        direction.X += input.DirX;
+                        direction.Y += input.DirY;
+                        if (direction.X != 0 && direction.Y != 0)
+                        {
+                            direction.Normalize();
+                        }
+
+                        Player.Rectangle += direction * Constants.MaxMoveSpeed * input.SimulationTime;
+                        FixCollision();
+                    }
+
+                    _positionFromServer = null;
+                }
             }
-            //Player.Speed = dirrection * Constants.MaxMoveSpeed;
         }
 
         private List<Bullet> ShootControl()
