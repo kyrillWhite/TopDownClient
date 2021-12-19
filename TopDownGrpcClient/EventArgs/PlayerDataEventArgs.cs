@@ -2,7 +2,7 @@
 
 namespace TopDownGrpcClient
 {
-    public class PlayerDataEventArgs : EventArgs
+    public class PlayerDataEventArgs : System.EventArgs
     {
         public string Id { get; set; }
         public int LastId { get; set; }

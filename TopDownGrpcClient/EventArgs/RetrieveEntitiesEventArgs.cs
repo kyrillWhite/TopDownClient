@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace TopDownGrpcClient
 {
-    public class RetrieveEntitiesEventArgs : EventArgs
+    public class RetrieveEntitiesEventArgs : System.EventArgs
     {
         public List<(string, int, float, float)> EntityPositions { get; set; }
     }

@@ -11,6 +11,7 @@ using TopDownGrpcClient;
 using TopDownLibrary;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using TopDownGrpcClient.EventArgs;
 
 namespace TopDown
 {
@@ -96,9 +97,10 @@ namespace TopDown
                 // Выход
             }
             InitialiseEntities();
-            Messages.GetEntityPositions();
-            Messages.RetrieveEntitiesEvent += e => UpdateEntitiesPositions(e);
-            Messages.PlayerDataEvent += e => UpdatePlayerPosition(e);
+            Messages.RetrieveEntitiesEvent += UpdateEntitiesPositions;
+            Messages.PlayerDataEvent += UpdatePlayerPosition;
+            Messages.GetPlayerInputsEvent += GetPlayerPositionForServer;
+            Messages.SendControlState(_playerId);
 
             base.Initialize(game);
         }
@@ -136,12 +138,7 @@ namespace TopDown
             {
                 MoveControl();
             }
-
-            lock (_inputDict)
-            {
-                Messages.SendControlState(_inputDict.Where(i => i.Key > _lastSendedInputId).ToDictionary(i => i.Key, i => i.Value), _playerId);
-                _lastSendedInputId = _inputDict.Count == 0 ? 0 : _inputDict.Max(i => i.Key);
-            }
+            
             //FixCollision();
             lock (Positions)
             {
@@ -181,6 +178,7 @@ namespace TopDown
                 var mPos = Control.GetMousePosition();
                 var cmPos = mPos - GameData.WindowSize / 2;
                 GameData.Camera = Player.Rectangle.Center + cmPos * Constants.MaxCameraOffset;
+                FixCollision();
             }
             if (!_pause && !_dead && !_start)
             {
@@ -441,6 +439,16 @@ namespace TopDown
                     }
                 }
                 deletedInputs.ForEach(inid => _inputDict.Remove(inid));
+            }
+        }
+
+        private void GetPlayerPositionForServer(PlayerInputsEventArgs e)
+        {
+            lock (_inputDict)
+            {
+                e.Inputs =_inputDict.Where(i => i.Key > _lastSendedInputId).ToDictionary(i => i.Key, i => i.Value);
+                
+                _lastSendedInputId = _inputDict.Count == 0 ? 0 : _inputDict.Max(i => i.Key);
             }
         }
 
