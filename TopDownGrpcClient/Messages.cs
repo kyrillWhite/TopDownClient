@@ -21,7 +21,7 @@ namespace TopDownGrpcClient
 
         public static void Initialize()
         {
-            var _chanel = GrpcChannel.ForAddress("http://26.104.61.15:5000");
+            var _chanel = GrpcChannel.ForAddress("http://26.202.152.148:5000");
             _client = new TopDownServer.TopDownServerClient(_chanel);
             sendControllCall = _client.UpdateUserState();
         }

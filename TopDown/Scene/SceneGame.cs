@@ -147,6 +147,7 @@ namespace TopDown
             {
                 UpdateEntitiesPositionsView();
             }
+
             // Send "change position" message to server (send speed)
             // Server code: check intersection //
 
@@ -417,7 +418,7 @@ namespace TopDown
             lock (_inputDict)
             {
                 var deletedInputs = new List<int>();
-                foreach (var input in _inputDict)
+                foreach (var input in _inputDict.ToList().OrderBy(i => i.Key))
                 {
                     if (input.Key <= e.LastId)
                     {
