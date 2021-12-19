@@ -8,6 +8,6 @@ namespace TopDownGrpcClient
 {
     public class RetrieveEntitiesEventArgs : EventArgs
     {
-        public List<(int, float, float)> EntityPositions { get; set; }
+        public List<(string, int, float, float)> EntityPositions { get; set; }
     }
 }
