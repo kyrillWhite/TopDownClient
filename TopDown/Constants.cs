@@ -19,6 +19,7 @@ namespace TopDown
         private readonly static int roundsCount = 10;
         private readonly static double roundTime = 12000;
         private readonly static double startTime = 5;
+        private readonly static int bufferDelayInterval = 16;
 
         public static Vector2 EntitySize => entitySize;
         public static float BulletSize => bulletSize;
@@ -31,5 +32,6 @@ namespace TopDown
         public static int RoundsCount => roundsCount;
         public static double RoundTime => roundTime;
         public static double StartTime => startTime;
+        public static int BufferDelayInterval => bufferDelayInterval;
     }
 }

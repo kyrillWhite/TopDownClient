@@ -17,11 +17,12 @@ namespace TopDown
     public class SceneGame : Scene
     {
 
-        private Player _player;
+        private Player _player = null;
+        private string _playerId = "";
         private Map _map; // To Server
         private Dictionary<string, Bullet> _bullets = new Dictionary<string, Bullet>(); // To Server
         private Dictionary<string, Player> _players = new Dictionary<string, Player>(); // To Server
-        private bool _playersInitialized = false;
+        private static Dictionary<string, List<(DateTime, Vector2)>> Positions = new Dictionary<string, List<(DateTime, Vector2)>>();
         private List<int> _rounds = new List<int>(new[] { 0, 0 }); // Only to server
         private int _allRounds = 0; // Only to server
         private Label _score = new Label(new Vector2(20, 20), "0 : 0", Color.Black, 0.99f, true);
@@ -89,7 +90,12 @@ namespace TopDown
             UiObjects["rifle_image"].isHovered += SetHandCursor;
             UiObjects["shotgun_image"].isHovered += SetHandCursor;
 
-
+            _playerId = Messages.GetPlayerId();
+            if (string.IsNullOrEmpty(_playerId))
+            {
+                // Выход
+            }
+            InitialiseEntities();
             Messages.GetEntityPositions();
             Messages.RetrieveEntitiesEvent += e => UpdateEntitiesPositions(e);
             Messages.PlayerDataEvent += e => UpdatePlayerPosition(e);
@@ -133,10 +139,14 @@ namespace TopDown
 
             lock (_inputDict)
             {
-                Messages.SendControlState(_inputDict.Where(i => i.Key > _lastSendedInputId).ToDictionary(i => i.Key, i => i.Value));
+                Messages.SendControlState(_inputDict.Where(i => i.Key > _lastSendedInputId).ToDictionary(i => i.Key, i => i.Value), _playerId);
                 _lastSendedInputId = _inputDict.Count == 0 ? 0 : _inputDict.Max(i => i.Key);
             }
-
+            FixCollision();
+            lock (Positions)
+            {
+                UpdateEntitiesPositionsView();
+            }
             // Send "change position" message to server (send speed)
             // Server code: check intersection //
 
@@ -162,147 +172,124 @@ namespace TopDown
             //});
 
             //Player.Move();
-            //var moveToCorrect = Vector2.Zero;
-            //var interWalls = Map._walls.FindAll(w => Player.HitCircle.Intersects(w.Rectangle));
-            //foreach (var interWall in interWalls)
-            //{
-            //    var potentCircPos = Player.HitCircle.Location;
-            //    var nearestPoint = new Vector2(
-            //        Math.Max(interWall.Rectangle.Min.X, Math.Min(potentCircPos.X, interWall.Rectangle.Max.X)),
-            //        Math.Max(interWall.Rectangle.Min.Y, Math.Min(potentCircPos.Y, interWall.Rectangle.Max.Y)));
-            //    var rayToNearest = nearestPoint - potentCircPos;
-            //    var overlap = Player.HitCircle.Radius - rayToNearest.Length();
-            //    if (float.IsNaN(overlap))
-            //    {
-            //        overlap = 0;
-            //    }
-            //    if (overlap > 0)
-            //    {
-            //        rayToNearest.Normalize();
-            //        moveToCorrect += -rayToNearest * overlap;
-            //        Player.Translate(-rayToNearest * overlap);
-            //    }
-            //}
             // Send change position from server (send moveToCorrect)
             ///////////////////////////////
             // Get positions of players
-            if (_playersInitialized)
+            lock (Player)
             {
-                lock (Player)
-                {
-                    var mPos = Control.GetMousePosition();
-                    var cmPos = mPos - GameData.WindowSize / 2;
-                    GameData.Camera = Player.Rectangle.Center + cmPos * Constants.MaxCameraOffset;
-                }
-                if (!_pause && !_dead && !_start)
-                {
-                    var newBullets = ShootControl();
-                    foreach (var newBullet in newBullets)
-                    {
-                        _bullets.Add(Guid.NewGuid().ToString(), newBullet);
-                        // Send new bullets to server (id, speed, start position, end position, wall)
-                    }
-                }
-                // Test shooting from bot
-                if (!_pause && !_start)
-                {
-                    var shotingPlayer = _players.FirstOrDefault(p => p.Value.Team == 2).Value;
-                    if (shotingPlayer != null)
-                    {
-                        var _newBullet = Shoot(shotingPlayer.Rectangle.Center, shotingPlayer.Rectangle.Center - Vector2.UnitX, 0, true);
-                        _newBullet.Team = 2;
-                        _bullets.Add(Guid.NewGuid().ToString(), _newBullet);
-                    }
-                }
-                // Get new bullets from server
-
-                // Server code: find remove bullets
-                var removedBulletsId = new List<string>( // End distance or hit to wall
-                    _bullets.Where(b => b.Value.HitCircle.Intersects(b.Value.IntersectingWall) ||
-                    Vector2.Dot(Vector2.Normalize(b.Value.HitCircle.Location - b.Value.EndPoint),
-                    Vector2.Normalize(b.Value.StartPoint - b.Value.EndPoint)) <= 0.0F)
-                    .ToDictionary(b => b.Key).Keys);
-
-
-                var interPlayersAndBullets = (from p in _players
-                                              from b in _bullets
-                                              where p.Value.Team != b.Value.Team &&
-                                              p.Value.HitCircle.Intersects(b.Value.HitCircle)
-                                              group (p.Key, b.Key) by b.Key into pb
-                                              select pb.First()).ToList();
-                interPlayersAndBullets.ForEach(pb => { _players[pb.Item1].Hp -= _bullets[pb.Item2].Damage; });
-
-                removedBulletsId.AddRange(interPlayersAndBullets.Select(pb => pb.Item2));
-                var deadPlayersId = new List<string>(_players.Where(p => p.Value.Hp <= 0).ToDictionary(p => p.Key).Keys);
-                ///////////////////
-                // Get removed bullets from server
-                removedBulletsId = removedBulletsId.Distinct().ToList();
-                removedBulletsId.ForEach(bId => { GameData.GameObjects.Remove(_bullets[bId]); _bullets.Remove(bId); });
-                // Get dead players from server
-                deadPlayersId.ForEach(pId => { GameData.GameObjects.Remove(_players[pId]); _players.Remove(pId); });
-                if (!_players.ContainsValue(Player))
-                {
-
-                    _dead = true;
-                    // Set to Player texture of Ghost
-                }
-                // Get new HP from server
-                var hpRect = UiObjects["hp_bar"].Rectangle;
-                UiObjects["hp_bar"].Rectangle = new RectangleF(hpRect.Min,
-                    new Vector2(hpRect.Min.X + Constants.HpBarWidth * (float)_player.Hp / Constants.PlayerMaxHp, hpRect.Max.Y));
-
-                // Server code: check team win round
-                if (!_finalScore)
-                {
-                    var roundEnd = false;
-                    if (!_players.Any(p => p.Value.Team == 2))
-                    {
-                        _rounds[0]++;
-                        roundEnd = true;
-                    }
-                    if (!_players.Any(p => p.Value.Team == 1))
-                    {
-                        _rounds[1]++;
-                        roundEnd = true;
-                    }
-                    if (_roundTime > Constants.RoundTime)
-                    {
-                        roundEnd = true;
-                        var t1Count = _players.Where(p => p.Value.Team == 1).Count();
-                        var t2Count = _players.Where(p => p.Value.Team == 2).Count();
-                        if (t1Count != t2Count)
-                        {
-                            _rounds[t1Count > t2Count ? 0 : 1]++;
-                        }
-                    }
-                    if (roundEnd)
-                    {
-                        _allRounds++;
-                        _score.Text = $"{_rounds[0]} : {_rounds[1]}";
-                        if (_allRounds < Constants.RoundsCount)
-                        {
-                            InitializeRound(false);
-                        }
-                        else
-                        {
-                            InitializeRound(true);
-                            _pause = true;
-                            _finalScore = true;
-                            FinalScore();
-                        }
-                    }
-                }
-
-                ////////////////////////
-                ///Send reinitialize command + new score
-
-                foreach (var bullet in _bullets)
-                {
-                    bullet.Value.Move();
-                }
-
-                ESCPress();
+                var mPos = Control.GetMousePosition();
+                var cmPos = mPos - GameData.WindowSize / 2;
+                GameData.Camera = Player.Rectangle.Center + cmPos * Constants.MaxCameraOffset;
             }
+            if (!_pause && !_dead && !_start)
+            {
+                var newBullets = ShootControl();
+                foreach (var newBullet in newBullets)
+                {
+                    _bullets.Add(Guid.NewGuid().ToString(), newBullet);
+                    // Send new bullets to server (id, speed, start position, end position, wall)
+                }
+            }
+            // Test shooting from bot
+            //if (!_pause && !_start)
+            //{
+            //    var shotingPlayer = _players.FirstOrDefault(p => p.Value.Team == 2).Value;
+            //    if (shotingPlayer != null)
+            //    {
+            //        var _newBullet = Shoot(shotingPlayer.Rectangle.Center, shotingPlayer.Rectangle.Center - Vector2.UnitX, 0, true);
+            //        _newBullet.Team = 2;
+            //        _bullets.Add(Guid.NewGuid().ToString(), _newBullet);
+            //    }
+            //}
+            // Get new bullets from server
+
+            // Server code: find remove bullets
+            var removedBulletsId = new List<string>( // End distance or hit to wall
+                _bullets.Where(b => b.Value.HitCircle.Intersects(b.Value.IntersectingWall) ||
+                Vector2.Dot(Vector2.Normalize(b.Value.HitCircle.Location - b.Value.EndPoint),
+                Vector2.Normalize(b.Value.StartPoint - b.Value.EndPoint)) <= 0.0F)
+                .ToDictionary(b => b.Key).Keys);
+
+
+            var interPlayersAndBullets = (from p in _players
+                                          from b in _bullets
+                                          where p.Value.Team != b.Value.Team &&
+                                          p.Value.HitCircle.Intersects(b.Value.HitCircle)
+                                          group (p.Key, b.Key) by b.Key into pb
+                                          select pb.First()).ToList();
+            interPlayersAndBullets.ForEach(pb => { _players[pb.Item1].Hp -= _bullets[pb.Item2].Damage; });
+
+            removedBulletsId.AddRange(interPlayersAndBullets.Select(pb => pb.Item2));
+            var deadPlayersId = new List<string>(_players.Where(p => p.Value.Hp <= 0).ToDictionary(p => p.Key).Keys);
+            ///////////////////
+            // Get removed bullets from server
+            removedBulletsId = removedBulletsId.Distinct().ToList();
+            removedBulletsId.ForEach(bId => { GameData.GameObjects.Remove(_bullets[bId]); _bullets.Remove(bId); });
+            // Get dead players from server
+            deadPlayersId.ForEach(pId => { GameData.GameObjects.Remove(_players[pId]); _players.Remove(pId); });
+            if (!_players.ContainsValue(Player))
+            {
+
+                _dead = true;
+                // Set to Player texture of Ghost
+            }
+            // Get new HP from server
+            var hpRect = UiObjects["hp_bar"].Rectangle;
+            UiObjects["hp_bar"].Rectangle = new RectangleF(hpRect.Min,
+                new Vector2(hpRect.Min.X + Constants.HpBarWidth * (float)_player.Hp / Constants.PlayerMaxHp, hpRect.Max.Y));
+
+            // Server code: check team win round
+            if (!_finalScore)
+            {
+                var roundEnd = false;
+                if (!_players.Any(p => p.Value.Team == 2))
+                {
+                    _rounds[0]++;
+                    roundEnd = true;
+                }
+                if (!_players.Any(p => p.Value.Team == 1))
+                {
+                    _rounds[1]++;
+                    roundEnd = true;
+                }
+                if (_roundTime > Constants.RoundTime)
+                {
+                    roundEnd = true;
+                    var t1Count = _players.Where(p => p.Value.Team == 1).Count();
+                    var t2Count = _players.Where(p => p.Value.Team == 2).Count();
+                    if (t1Count != t2Count)
+                    {
+                        _rounds[t1Count > t2Count ? 0 : 1]++;
+                    }
+                }
+                if (roundEnd)
+                {
+                    _allRounds++;
+                    _score.Text = $"{_rounds[0]} : {_rounds[1]}";
+                    if (_allRounds < Constants.RoundsCount)
+                    {
+                        InitializeRound(false);
+                    }
+                    else
+                    {
+                        InitializeRound(true);
+                        _pause = true;
+                        _finalScore = true;
+                        FinalScore();
+                    }
+                }
+            }
+
+            ////////////////////////
+            ///Send reinitialize command + new score
+
+            foreach (var bullet in _bullets)
+            {
+                bullet.Value.Move();
+            }
+
+            ESCPress();
+
             base.Update(game);
         }
 
@@ -317,11 +304,11 @@ namespace TopDown
                 GameData.GameObjects.Remove(bullet.Value);
             }
             _bullets.Clear();
-            foreach (var player in _players)
-            {
-                GameData.GameObjects.Remove(player.Value);
-            }
-            _players.Clear(); // This also for client
+            //foreach (var player in _players)
+            //{
+            //    GameData.GameObjects.Remove(player.Value);
+            //}
+            //_players.Clear(); // This also for client
             if (onlyClear)
             {
                 Player.Speed = Vector2.Zero;
@@ -343,8 +330,8 @@ namespace TopDown
             //}
             //////////////////////////
             // Get players from server
-            Player = _players.First().Value;
-            Player.Rectangle -= Player.Rectangle.Min;
+            Player = _players[_playerId];
+            //Player.Rectangle -= Player.Rectangle.Min;
 
             /////////////////////////
             ShowWeaponChoose();
@@ -354,33 +341,77 @@ namespace TopDown
             _dead = false;
         }
 
+        private void InitialiseEntities()
+        {
+            var entities = Messages.GetEntities();
+            foreach (var entityPos in entities)
+            {
+                Player entity = CreatePlayer(new Vector2(entityPos.Item3, entityPos.Item4), entityPos.Item2);
+                _players.Add(entityPos.Item1, entity);
+                Positions.Add(entityPos.Item1, new List<(DateTime, Vector2)>() { (DateTime.Now, entity.Rectangle.Min) });
+            }
+            InitializeRound(false);
+        }
+
         private void UpdateEntitiesPositions(RetrieveEntitiesEventArgs e)
         {
-            if (!_playersInitialized)
-            {
-                foreach (var entityPos in e.EntityPositions)
-                {
-                    Player entity = CreatePlayer(new Vector2(entityPos.Item3, entityPos.Item4), entityPos.Item2);
-                    _players.Add(entityPos.Item1, entity);
-                }
-                InitializeRound(false);
-                _playersInitialized = true;
-            }
-            else
+            lock (Positions)
             {
                 foreach (var entityPos in e.EntityPositions)
                 {
                     Player entity = _players[entityPos.Item1];
-                    entity.Rectangle = Player.Rectangle + new Vector2(entityPos.Item3, entityPos.Item4) - Player.Rectangle.Min;
+                    if (entity != Player)
+                    {
+                        Positions[entityPos.Item1].Add((DateTime.Now, new Vector2(entityPos.Item3, entityPos.Item4)));
+                        Positions[entityPos.Item1].RemoveAll(p => (DateTime.Now - p.Item1).Seconds > 10);
+                        //entity.Rectangle = Player.Rectangle + new Vector2(entityPos.Item3, entityPos.Item4) - Player.Rectangle.Min;
+                    }
                 }
             }
+        }
 
+        private void UpdateEntitiesPositionsView()
+        {
+            foreach (var player in _players)
+            {
+                if (player.Value != Player)
+                {
+                    var showTime = DateTime.Now.AddMilliseconds(-Constants.BufferDelayInterval);
+                    var fP = Positions[player.Key].LastOrDefault(p => p.Item1 < showTime);
+                    var sP = Positions[player.Key].FirstOrDefault(p => p.Item1 > showTime);
+                    
+                    if (fP.Item1 == DateTime.MinValue)
+                    {
+                        fP = sP;
+                    }
+                    if (sP.Item1 == DateTime.MinValue)
+                    {
+                        sP = fP;
+                    }
+
+                    var ratio = (float)(sP.Item1 - fP.Item1).Ticks / (float)(showTime - fP.Item1).Ticks; 
+                    if (ratio != 0)
+                    {
+                        var ttt = 0;
+                    }
+                    var newPosInter = ratio == 0 ? fP.Item2 : (sP.Item2 - fP.Item2) / ratio + fP.Item2;
+                    player.Value.Rectangle = player.Value.Rectangle + newPosInter - player.Value.Rectangle.Min;
+                }
+            }
         }
 
         private void UpdatePlayerPosition(PlayerDataEventArgs e)
         {
             lock (Player)
             {
+                if (Player == null)
+                {
+                    if (!_players.ContainsKey(e.Id))
+                    {
+                        return;
+                    }
+                    Player = _players[e.Id];
+                }
                 Player.Rectangle = Player.Rectangle + new Vector2(e.X, e.Y) - Player.Rectangle.Min;
             }
             lock (_inputDict)
@@ -408,6 +439,33 @@ namespace TopDown
                     }
                 }
                 deletedInputs.ForEach(inid => _inputDict.Remove(inid));
+            }
+        }
+
+        private void FixCollision()
+        {
+            var interWalls = Map._walls.FindAll(w => Player.HitCircle.Intersects(w.Rectangle));
+            foreach (var interWall in interWalls)
+            {
+                var potentCircPos = Player.HitCircle.Location;
+                var nearestPoint = new Vector2(
+                    Math.Max(interWall.Rectangle.Min.X, Math.Min(potentCircPos.X, interWall.Rectangle.Max.X)),
+                    Math.Max(interWall.Rectangle.Min.Y, Math.Min(potentCircPos.Y, interWall.Rectangle.Max.Y)));
+                var rayToNearest = nearestPoint - potentCircPos;
+                var overlap = Player.HitCircle.Radius - rayToNearest.Length();
+                if (float.IsNaN(overlap))
+                {
+                    overlap = 0;
+                }
+                if (overlap > 0)
+                {
+                    rayToNearest.Normalize();
+                    if (float.IsNaN(rayToNearest.X) || float.IsNaN(rayToNearest.Y))
+                    {
+                        rayToNearest = Vector2.Zero;
+                    }
+                    Player.Rectangle += (-rayToNearest * overlap);
+                }
             }
         }
 

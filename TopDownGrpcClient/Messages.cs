@@ -26,7 +26,7 @@ namespace TopDownGrpcClient
             sendControllCall = _client.UpdateUserState();
         }
 
-        public static void SendControlState(Dictionary<int, Input> inputs)
+        public static void SendControlState(Dictionary<int, Input> inputs, string playerId)
         {
             foreach (var input in inputs.ToList())
             {
@@ -39,16 +39,20 @@ namespace TopDownGrpcClient
                     LeftMouse = input.Value.LeftMouse,
                     RightMouse = input.Value.RightMouse,
                     InputId = input.Key,
+                    Id = playerId,
                 };
                 sendControllCall.RequestStream.WriteAsync(controlStateReq);
                 sendControllCall.ResponseStream.MoveNext();
                 var playerData = sendControllCall.ResponseStream.Current;
-                PlayerDataEvent?.Invoke(new PlayerDataEventArgs() {
-                    LastId = playerData.LastInputId,
-                    X = playerData.Position.X,
-                    Y = playerData.Position.Y,
-                });
-                
+                if (playerData != null)
+                {
+                    PlayerDataEvent?.Invoke(new PlayerDataEventArgs()
+                    {
+                        LastId = playerData.LastInputId,
+                        X = playerData.Position.X,
+                        Y = playerData.Position.Y,
+                    });
+                }
             }
         }
 
@@ -68,6 +72,17 @@ namespace TopDownGrpcClient
         {
             var getMapCall = _client.GetMap(new Google.Protobuf.WellKnownTypes.Empty());
             return getMapCall.MapStr;
+        }
+
+        public static List<(string, int, float, float)> GetEntities()
+        {
+            var getMapCall = _client.GetEntities(new Google.Protobuf.WellKnownTypes.Empty());
+            return getMapCall.Entities.Select(p => (p.Id, p.Team, p.Position.X, p.Position.Y)).ToList();
+        }
+
+        public static string GetPlayerId()
+        {
+            return _client.GetPlayerId(new Google.Protobuf.WellKnownTypes.Empty()).Id;
         }
     }
 }
