@@ -142,7 +142,7 @@ namespace TopDown
                 Messages.SendControlState(_inputDict.Where(i => i.Key > _lastSendedInputId).ToDictionary(i => i.Key, i => i.Value), _playerId);
                 _lastSendedInputId = _inputDict.Count == 0 ? 0 : _inputDict.Max(i => i.Key);
             }
-            FixCollision();
+            //FixCollision();
             lock (Positions)
             {
                 UpdateEntitiesPositionsView();
@@ -435,6 +435,7 @@ namespace TopDown
                         lock (Player)
                         {
                             Player.Rectangle += dirrection * Constants.MaxMoveSpeed;
+                            FixCollision();
                         }
                     }
                 }
@@ -570,7 +571,10 @@ namespace TopDown
                 });
             }
             _inputId++;
-            Player.Rectangle += dirrection * Constants.MaxMoveSpeed;
+            lock (Player)
+            {
+                Player.Rectangle += dirrection * Constants.MaxMoveSpeed;
+            }
             //Player.Speed = dirrection * Constants.MaxMoveSpeed;
         }
 
