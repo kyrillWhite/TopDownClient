@@ -15,10 +15,6 @@ namespace TopDownWpfClient.ViewModels {
 
 		public event Action ExitEvent;
 
-		private void Play() {
-			PlayEvent?.Invoke();
-		}
-
 		public StartPageViewModel() {
 			// PlayCommand = new DelegateCommand<object>(_ => Play());
 			PlayCommand = new DelegateCommand<object>(_ => PlayEvent?.Invoke());

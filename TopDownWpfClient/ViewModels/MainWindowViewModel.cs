@@ -1,7 +1,9 @@
-﻿using System.Windows.Controls;
+﻿using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using Microsoft.AnyContainer;
 using TopDownWpfClient.Services.Pages;
+using TopDownWpfClient.Services.Windows;
 
 namespace TopDownWpfClient.ViewModels {
 	public class MainWindowViewModel : BaseViewModel {
@@ -18,7 +20,9 @@ namespace TopDownWpfClient.ViewModels {
 			_startPageVM = new StartPageViewModel();
 			_searchGamePageVM = new SearchGamePageViewModel();
 			_startPageVM.PlayEvent += SwitchPageToSearchGamePage;
+			_startPageVM.ExitEvent += KillApp;
 			_searchGamePageVM.BackEvent += SwitchPageToStartPage;
+			_searchGamePageVM.SearchGameEvent += SearchGame;
 
 			StartPage = pageManager.CreatePage(_startPageVM);
 			SearchGamePage = pageManager.CreatePage(_searchGamePageVM);
@@ -32,6 +36,14 @@ namespace TopDownWpfClient.ViewModels {
 
 		private void SwitchPageToStartPage() {
 			CurrentPage = StartPage;
+		}
+
+		private void KillApp() {
+			Application.Current.Shutdown();
+		}
+
+		private void SearchGame() {
+
 		}
 	}
 }
