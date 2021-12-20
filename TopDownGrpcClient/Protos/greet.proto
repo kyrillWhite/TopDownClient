@@ -8,11 +8,12 @@ package topdown;
 
 // The greeting service definition.
 service TopDownServer {
-  // Sends a greeting
-  rpc UpdateUserState (stream ControlStateRequest) returns (stream GameStateResponse);
-  rpc GetMap (google.protobuf.Empty) returns (Map);
-  rpc GetPlayerId (google.protobuf.Empty) returns (Entity);
-  rpc GetEntities (google.protobuf.Empty) returns (EntitiesResponse);
+	// Sends a greeting
+	rpc SendUserState (stream ControlStateRequest) returns (google.protobuf.Empty);
+	rpc UpdateGameState (PlayerId) returns (stream GameStateResponse);
+	rpc GetMap (google.protobuf.Empty) returns (Map);
+	rpc GetPlayerId (google.protobuf.Empty) returns (Entity);
+	rpc GetEntities (google.protobuf.Empty) returns (EntitiesResponse);
 }
 
 // The request message containing the user's name.
@@ -21,12 +22,12 @@ message ControlStateRequest {
 }
 
 message EntitiesResponse {
-    repeated Entity entities = 1;
+	repeated Entity entities = 1;
 }
 
 message GameStateResponse {
-    repeated Entity entities = 1;
-    PlayerServerPosition playerServerPosition = 2;
+	repeated Entity entities = 1;
+	PlayerServerPosition playerServerPosition = 2;
 }
 
 message PlayerMoveClient {
@@ -47,16 +48,20 @@ message PlayerServerPosition {
 }
 
 message Entity {
-    string id = 1;
-    int32 team = 2;
-    Vector2 position = 3;
+	string id = 1;
+	int32 team = 2;
+	Vector2 position = 3;
 }
 
 message Vector2 {
-    float X = 1;
-    float Y = 2;
+	float X = 1;
+	float Y = 2;
 }
 
 message Map {
-    string mapStr = 1;
+	string mapStr = 1;
+}
+
+message PlayerId {
+	string id = 1;
 }

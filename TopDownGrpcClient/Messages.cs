@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Google.Protobuf.Collections;
+using Google.Protobuf.WellKnownTypes;
 using Grpc.Net.Client;
 using Grpc.Core;
 using TopDownGrpcClient.EventArgs;
@@ -15,7 +16,7 @@ namespace TopDownGrpcClient
     public static class Messages
     {
         static TopDownServer.TopDownServerClient _client;
-        static AsyncDuplexStreamingCall<ControlStateRequest, GameStateResponse> sendControllCall;
+        static AsyncClientStreamingCall<ControlStateRequest, Empty> sendControllCall;
 
         public delegate void RetrieveEntitiesDelegate(RetrieveEntitiesEventArgs e);
         public delegate void PlayerDataDelegate(PlayerDataEventArgs e);
@@ -29,7 +30,7 @@ namespace TopDownGrpcClient
         {
             var _chanel = GrpcChannel.ForAddress("http://26.104.61.15:5000");
             _client = new TopDownServer.TopDownServerClient(_chanel);
-            sendControllCall = _client.UpdateUserState();
+            sendControllCall = _client.SendUserState();
         }
 
         public static void SendControlState(List<Input> inputs, string playerId)
@@ -57,37 +58,44 @@ namespace TopDownGrpcClient
                 lock (sendControllCall)
                 {
                     sendControllCall.RequestStream.WriteAsync(controlStateRequest).Wait();
-
-                    sendControllCall.ResponseStream.MoveNext().Wait();
-
-                    var gameStateResponse = sendControllCall.ResponseStream.Current;
-
-                    PlayerDataEvent?.Invoke(new PlayerDataEventArgs()
-                    {
-                        Time = gameStateResponse.PlayerServerPosition.Time,
-                        X = gameStateResponse.PlayerServerPosition.Position.X,
-                        Y = gameStateResponse.PlayerServerPosition.Position.Y,
-                    });
-
-                    RetrieveEntitiesEvent?.Invoke(new RetrieveEntitiesEventArgs()
-                    {
-                        EntityPositions = gameStateResponse.Entities.Select(p => (p.Id, p.Team, p.Position.X, p.Position.Y)).ToList()
-                    });
                 }
+
+                //sendControllCall.ResponseStream.MoveNext().Wait();
+
+                //    var gameStateResponse = sendControllCall.ResponseStream.Current;
+
+                //    PlayerDataEvent?.Invoke(new PlayerDataEventArgs()
+                //    {
+                //        Time = gameStateResponse.PlayerServerPosition.Time,
+                //        X = gameStateResponse.PlayerServerPosition.Position.X,
+                //        Y = gameStateResponse.PlayerServerPosition.Position.Y,
+                //    });
+
+                //    RetrieveEntitiesEvent?.Invoke(new RetrieveEntitiesEventArgs()
+                //    {
+                //        EntityPositions = gameStateResponse.Entities.Select(p => (p.Id, p.Team, p.Position.X, p.Position.Y)).ToList()
+                //    });
             });
         }
 
-        //public static async Task GetEntityPositions()
-        //{
-        //    using var retrieveControlCall = _client.RetrieveEntities(new Google.Protobuf.WellKnownTypes.Empty());
-        //    await foreach (var message in retrieveControlCall.ResponseStream.ReadAllAsync())
-        //    {
-        //        RetrieveEntitiesEvent?.Invoke(new RetrieveEntitiesEventArgs()
-        //        {
-        //            EntityPositions = message.Entities.Select(p => (p.Id, p.Team, p.Position.X, p.Position.Y)).ToList()
-        //        });
-        //    }
-        //}
+        public static async Task GetEntityPositions(string id)
+        {
+            using var retrieveControlCall = _client.UpdateGameState(new PlayerId() { Id = id});
+            await foreach (var gameStateResponse in retrieveControlCall.ResponseStream.ReadAllAsync())
+            {
+                PlayerDataEvent?.Invoke(new PlayerDataEventArgs()
+                {
+                    Time = gameStateResponse.PlayerServerPosition.Time,
+                    X = gameStateResponse.PlayerServerPosition.Position.X,
+                    Y = gameStateResponse.PlayerServerPosition.Position.Y,
+                });
+
+                RetrieveEntitiesEvent?.Invoke(new RetrieveEntitiesEventArgs()
+                {
+                    EntityPositions = gameStateResponse.Entities.Select(p => (p.Id, p.Team, p.Position.X, p.Position.Y)).ToList()
+                });
+            }
+        }
 
         public static string GetMap()
         {

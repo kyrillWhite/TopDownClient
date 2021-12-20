@@ -109,6 +109,10 @@ namespace TopDown
             InitialiseEntities();
             Messages.RetrieveEntitiesEvent += UpdateEntitiesPositions;
             Messages.PlayerDataEvent += UpdatePlayerPosition;
+            Task.Run(() =>
+            {
+                Messages.GetEntityPositions(_playerId);
+            });
             //Messages.GetPlayerInputsEvent += GetPlayerPositionForServer;
             //Messages.SendControlState(_playerId);
 
