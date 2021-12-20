@@ -612,6 +612,8 @@ namespace TopDown
 
             lock (Player)
             {
+                var direction = Vector2.Zero;
+
                 if (_positionFromServer is not null)
                 {
                     //if (Player == null)
@@ -624,26 +626,38 @@ namespace TopDown
                     //}
 
                     Player.Rectangle = Player.Rectangle + new Vector2(_positionFromServer.X, _positionFromServer.Y) - Player.Rectangle.Min;
-                    while (_inputs.Any() && _inputs.First().Time <= _positionFromServer.Time)
+                    while (_inputs.Count > 1 && _inputs.First().Time <= _positionFromServer.Time)
                     {
                         _inputs.RemoveAt(0);
                     }
-                    foreach (var input in _inputs)
+
+                    for (int i = 0; i < _inputs.Count - 1; i++)
                     {
-                        var direction = Vector2.Zero;
-                        direction.X += input.DirX;
-                        direction.Y += input.DirY;
+                        direction = Vector2.Zero;
+                        direction.X += _inputs[i].DirX;
+                        direction.Y += _inputs[i].DirY;
                         if (direction.X != 0 && direction.Y != 0)
                         {
                             direction.Normalize();
                         }
 
-                        Player.Rectangle += direction * Constants.MaxMoveSpeed * input.SimulationTime;
+                        Player.Rectangle += direction * Constants.MaxMoveSpeed * _inputs[i].SimulationTime;
                         FixCollision();
                     }
 
                     _positionFromServer = null;
                 }
+
+                direction = Vector2.Zero;
+                direction.X += _inputs.Last().DirX;
+                direction.Y += _inputs.Last().DirY;
+                if (direction.X != 0 && direction.Y != 0)
+                {
+                    direction.Normalize();
+                }
+
+                Player.Rectangle += direction * Constants.MaxMoveSpeed * _inputs.Last().SimulationTime;
+                FixCollision();
             }
         }
 
