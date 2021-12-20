@@ -46,18 +46,11 @@ namespace TopDown
 
         public override void Initialize(MainGame game)
         {
-            var mapXml = Messages.GetMap();
-            if (string.IsNullOrEmpty(mapXml))
-            {
-                // Выход
-            }
-            else
-            {
-                LoadMap(mapXml);
-            }
-            //_map = new Map("C:/Users/kirill/Desktop/Map/map.txt", 2);
-            //SaveMap("map1.xml");
+            base.Initialize(game);
+        }
 
+        public void InitializeUI()
+        {
             UiObjects.Add("score_plane", new UIObject("score_plane", true, 0.91f, new RectangleF(8, 20, 100, 50)));
             UiObjects.Add("menu_plane", new UIObject("menu_plane", false, 0.91f, new RectangleF(440, 210, 400, 300)));
             UiObjects.Add("button_continue", new UIObject("button_continue", false, 0.93f, new RectangleF(520, 230, 240, 60)));
@@ -89,7 +82,21 @@ namespace TopDown
             UiObjects["sniper_rifle_image"].isHovered += SetHandCursor;
             UiObjects["rifle_image"].isHovered += SetHandCursor;
             UiObjects["shotgun_image"].isHovered += SetHandCursor;
+        }
 
+        public void InitializeServerPart()
+        {
+            //_map = new Map("C:/Users/kirill/Desktop/Map/map.txt", 2);
+            //SaveMap("map1.xml");
+            var mapXml = Messages.GetMap();
+            if (string.IsNullOrEmpty(mapXml))
+            {
+                // Выход
+            }
+            else
+            {
+                LoadMap(mapXml);
+            }
             _playerId = Messages.GetPlayerId();
             if (string.IsNullOrEmpty(_playerId))
             {
@@ -99,8 +106,6 @@ namespace TopDown
             Messages.GetEntityPositions();
             Messages.RetrieveEntitiesEvent += e => UpdateEntitiesPositions(e);
             Messages.PlayerDataEvent += e => UpdatePlayerPosition(e);
-
-            base.Initialize(game);
         }
 
         public override void Update(MainGame game)
@@ -491,14 +496,14 @@ namespace TopDown
             GameData.GameObjects.AddRange(Map._walls);
         }
 
-        //public void SaveMap(string name)
-        //{
-        //    var formatter = new XmlSerializer(typeof(Map));
-        //    using (FileStream fs = new FileStream(name, FileMode.OpenOrCreate))
-        //    {
-        //        formatter.Serialize(fs, Map);
-        //    }
-        //}
+        public void SaveMap(string name)
+        {
+            var formatter = new XmlSerializer(typeof(Map));
+            using (FileStream fs = new FileStream(name, FileMode.OpenOrCreate))
+            {
+                formatter.Serialize(fs, Map);
+            }
+        }
 
         private void ESCPress()
         {

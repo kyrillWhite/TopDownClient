@@ -36,7 +36,7 @@ namespace TopDown
             {
                 for (int j = 0; j < 40; j++)
                 {
-                    _grounds.Add(new Ground($"ground{(new Random().Next(1, 3))}",
+                    _grounds.Add(new Ground($"ground{(new Random().Next(1, 7))}",
                         new RectangleF(i * 80, j * 80, 80, 80)));
                 }
             }
