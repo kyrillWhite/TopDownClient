@@ -20,11 +20,18 @@ namespace TopDown
         {
             _rectangle = rectangle;
             _texture = texture;
-            GameData.GameObjects.Add(this);
+            lock (GameData.GameObjects) 
+            {
+                GameData.GameObjects.Add(this);
+            }
         }
 
         public virtual void Draw(SpriteBatch spriteBranch)
         {
+            if (this is Player { IsDead: true })
+            {
+                return;
+            }
             var rect = (_rectangle * GameData.Scale).GetRectangle();
             if (!(this is UIObject)) {
                 rect.Location -= GameData.Camera.ToPoint();
