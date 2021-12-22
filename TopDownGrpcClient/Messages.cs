@@ -21,81 +21,108 @@ namespace TopDownGrpcClient
         public static event RetrieveUpdateDelegate RetrieveUpdateEvent;
         public static event PlayerDataDelegate PlayerDataEvent;
 
+        public static Exception Exception { get; set; } = null;
+
         public static bool CanUpdate { get; set; } = false;
         public static CancellationTokenSource CanUpdateToken = new CancellationTokenSource();
 
         public static void Initialize()
         {
-            if (sendControllCall != null)
-            {
-                sendControllCall.Dispose();
-            }
-            if (_chanel != null)
-            {
-                _chanel.Dispose();
-            }
+            Close();
+
+            Exception = null;
 
             _chanel = GrpcChannel.ForAddress("http://26.104.61.15:5000");
             _client = new TopDownServer.TopDownServerClient(_chanel);
             sendControllCall = _client.UpdateUserState();
         }
 
+        public static void Close()
+        {
+            //if (sendControllCall != null)
+            //{
+            //    sendControllCall.Dispose();
+            //}
+            if (_chanel != null)
+            {
+                _chanel.Dispose();
+            }
+        }
+
         public static void SendControlState(Dictionary<int, Input> inputs, string playerId)
         {
-            foreach (var input in inputs.ToList())
+            if (Exception != null) return;
+
+            try
             {
-                var controlStateReq = new ControlStateRequest()
+                foreach (var input in inputs.ToList())
                 {
-                    DirX = input.Value.DirX,
-                    DirY = input.Value.DirY,
-                    GlobalMousePosX = input.Value.GlobalMousePosX,
-                    GlobalMousePosY = input.Value.GlobalMousePosY,
-                    LeftMouse = input.Value.LeftMouse,
-                    RightMouse = input.Value.RightMouse,
-                    InputId = input.Key,
-                    Id = playerId,
-                };
-                sendControllCall.RequestStream.WriteAsync(controlStateReq).Wait();
-                sendControllCall.ResponseStream.MoveNext().Wait();
-                var playerData = sendControllCall.ResponseStream.Current;
-                if (playerData != null)
-                {
-                    PlayerDataEvent?.Invoke(new PlayerDataEventArgs()
+                    var controlStateReq = new ControlStateRequest()
                     {
-                        LastId = playerData.LastInputId,
-                        X = playerData.Position.X,
-                        Y = playerData.Position.Y,
-                        HpPercent = playerData.HpPercent,
-                        ReloadPercent = playerData.ReloadPercent,
-                        BulletsCount = playerData.BulletsCount,
-                    });
+                        DirX = input.Value.DirX,
+                        DirY = input.Value.DirY,
+                        GlobalMousePosX = input.Value.GlobalMousePosX,
+                        GlobalMousePosY = input.Value.GlobalMousePosY,
+                        LeftMouse = input.Value.LeftMouse,
+                        RightMouse = input.Value.RightMouse,
+                        InputId = input.Key,
+                        Id = playerId,
+                    };
+                    sendControllCall.RequestStream.WriteAsync(controlStateReq).Wait();
+                    sendControllCall.ResponseStream.MoveNext().Wait();
+                    var playerData = sendControllCall.ResponseStream.Current;
+                    if (playerData != null)
+                    {
+                        PlayerDataEvent?.Invoke(new PlayerDataEventArgs()
+                        {
+                            LastId = playerData.LastInputId,
+                            X = playerData.Position.X,
+                            Y = playerData.Position.Y,
+                            HpPercent = playerData.HpPercent,
+                            ReloadPercent = playerData.ReloadPercent,
+                            BulletsCount = playerData.BulletsCount,
+                        });
+                    }
                 }
+            }
+            catch (Exception e)
+            {
+                Exception = e;
+                Close();
             }
         }
 
         public static async Task GetUpdate()
         {
-            using var retrieveControlCall = _client.RetrieveUpdate(new Google.Protobuf.WellKnownTypes.Empty());
-            await foreach (var message in retrieveControlCall.ResponseStream.ReadAllAsync())
+            try
             {
-                if (!CanUpdate)
-                    CanUpdateToken.Token.WaitHandle.WaitOne();
-
-                RetrieveUpdateEvent?.Invoke(new RetrieveUpdateEventArgs()
+                using var retrieveControlCall = _client.RetrieveUpdate(new Google.Protobuf.WellKnownTypes.Empty());
+                await foreach (var message in retrieveControlCall.ResponseStream.ReadAllAsync())
                 {
-                    EntityPositions = message.Entities.Select(p => (p.Id, p.Team, p.Position.X, p.Position.Y, p.IsDead)).ToList(),
-                    Bullets = message.Bullets.Select(b => new BulletData()
+                    if (!CanUpdate)
+                        CanUpdateToken.Token.WaitHandle.WaitOne();
+
+                    RetrieveUpdateEvent?.Invoke(new RetrieveUpdateEventArgs()
                     {
-                        CreationTime = b.CreationTime.ToDateTime().ToLocalTime(),
-                        StartPosX = b.StartPos.X,
-                        StartPosY = b.StartPos.Y,
-                        EndPosX = b.EndPos.X,
-                        EndPosY = b.EndPos.Y,
-                        Team = b.Team,
-                        Speed = b.Speed,
-                        Id = b.Id,
-                    }).ToList(),
-                });
+                        EntityPositions = message.Entities.Select(p => (p.Id, p.Team, p.Position.X, p.Position.Y, p.IsDead)).ToList(),
+                        Bullets = message.Bullets.Select(b => new BulletData()
+                        {
+                            CreationTime = b.CreationTime.ToDateTime().ToLocalTime(),
+                            StartPosX = b.StartPos.X,
+                            StartPosY = b.StartPos.Y,
+                            EndPosX = b.EndPos.X,
+                            EndPosY = b.EndPos.Y,
+                            Team = b.Team,
+                            Speed = b.Speed,
+                            Id = b.Id,
+                        }).ToList(),
+                    });
+                }
+            }
+            catch (Exception e)
+            {
+                Exception = e;
+                Close();
             }
         }
 

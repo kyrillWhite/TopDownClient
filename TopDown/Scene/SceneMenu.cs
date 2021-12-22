@@ -19,7 +19,7 @@ namespace TopDown
         private Task<(string, string, List<(string, int, float, float)>)> StartGameTask = null;
         private Task TimeoutTask;
 
-        private Label _label = new Label(new Vector2(20, 20), "0 : 0", Color.Black, 0.99f, true) { Text = "Trying to connect to server" };
+        private InfoLabel _label = new InfoLabel(new Vector2(10, 10), "0 : 0", Color.Black, 0.99f, true) { Text = "Trying to connect to server" };
 
         //private Label c1;
         //private Label c2;

@@ -8,10 +8,10 @@ namespace TopDown
 {
     public class Label
     {
-        private Vector2 _position;
-        private string _text;
-        private Color _color;
-        private bool _visible;
+        protected Vector2 _position;
+        protected string _text;
+        protected Color _color;
+        protected bool _visible;
         public float _layerDepth = 0.0f;
 
         public Vector2 Position { get => _position; set => _position = value; }
@@ -29,11 +29,27 @@ namespace TopDown
             _visible = visible;
         }
 
-        public void Draw(SpriteBatch spriteBranch)
+        public virtual void Draw(SpriteBatch spriteBranch)
         {
             if (_visible)
             {
                 spriteBranch.DrawString(GameData.Font, _text, _position * GameData.Scale, _color, 0, Vector2.Zero, 1.0f, SpriteEffects.None, _layerDepth);
+            }
+        }
+    }
+
+    public class InfoLabel : Label
+    {
+        public InfoLabel(Vector2 position, string text, Color color, float layerDepth, bool visible) : base(position,
+            text, color, layerDepth, visible)
+        {
+        }
+
+        public override void Draw(SpriteBatch spriteBranch)
+        {
+            if (_visible)
+            {
+                spriteBranch.DrawString(GameData.Font, _text, _position * GameData.Scale, _color, 0, Vector2.Zero, 0.3f, SpriteEffects.None, _layerDepth);
             }
         }
     }
