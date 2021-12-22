@@ -537,7 +537,7 @@ namespace TopDown
                 var _from = new Vector2(bulletData.StartPosX, bulletData.StartPosY);
                 var _to = new Vector2(bulletData.EndPosX, bulletData.EndPosY);
                 var shootDir = Vector2.Normalize(_to - _from);
-                var startShootPos = _from + shootDir * bulletData.Speed * (float)(DateTime.Now - bulletData.CreationTime).TotalSeconds;
+                var startShootPos = _from; //+ shootDir * bulletData.Speed * (float)(DateTime.Now - bulletData.CreationTime).TotalSeconds;
                 var bullet = new Bullet(
                     Player.Team == bulletData.Team ? "friendly_bullet" : "enemy_bullet",
                     new Circle(new Vector2(Constants.BulletSize / 2), Constants.BulletSize / 2),
