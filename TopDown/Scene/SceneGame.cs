@@ -101,7 +101,7 @@ namespace TopDown
                 // Выход
             }
             InitialiseEntities();
-            Messages.GetUpdate();
+            Messages.GetUpdate(_playerId);
             Messages.RetrieveUpdateEvent += e => ServerUpdate(e);
             Messages.PlayerDataEvent += e => UpdatePlayerPosition(e);
         }
