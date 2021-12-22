@@ -49,9 +49,12 @@ namespace TopDown
         {
             GraphicsDevice.Clear(Color.White);
             _spriteBatch.Begin(SpriteSortMode.FrontToBack);
-            foreach (var gameObject in GameData.GameObjects)
+            lock (GameData.GameObjects)
             {
-                gameObject.Draw(_spriteBatch);
+                foreach (var gameObject in GameData.GameObjects)
+                {
+                    gameObject.Draw(_spriteBatch);
+                }
             }
             foreach (var label in GameData.Labels)
             {

@@ -14,9 +14,9 @@ namespace TopDownGrpcClient
     {
         static TopDownServer.TopDownServerClient _client;
         static AsyncDuplexStreamingCall<ControlStateRequest, PlayerDataResponse> sendControllCall;
-        public delegate void RetrieveEntitiesDelegate(RetrieveEntitiesEventArgs e);
+        public delegate void RetrieveUpdateDelegate(RetrieveUpdateEventArgs e);
         public delegate void PlayerDataDelegate(PlayerDataEventArgs e);
-        public static event RetrieveEntitiesDelegate RetrieveEntitiesEvent;
+        public static event RetrieveUpdateDelegate RetrieveUpdateEvent;
         public static event PlayerDataDelegate PlayerDataEvent;
 
         public static void Initialize()
@@ -51,19 +51,33 @@ namespace TopDownGrpcClient
                         LastId = playerData.LastInputId,
                         X = playerData.Position.X,
                         Y = playerData.Position.Y,
+                        HpPercent = playerData.HpPercent,
+                        ReloadPercent = playerData.ReloadPercent,
+                        BulletsCount = playerData.BulletsCount,
                     });
                 }
             }
         }
 
-        public static async Task GetEntityPositions()
+        public static async Task GetUpdate()
         {
-            using var retrieveControlCall = _client.RetrieveEntities(new Google.Protobuf.WellKnownTypes.Empty());
+            using var retrieveControlCall = _client.RetrieveUpdate(new Google.Protobuf.WellKnownTypes.Empty());
             await foreach (var message in retrieveControlCall.ResponseStream.ReadAllAsync())
             {
-                RetrieveEntitiesEvent?.Invoke(new RetrieveEntitiesEventArgs()
+                RetrieveUpdateEvent?.Invoke(new RetrieveUpdateEventArgs()
                 {
-                    EntityPositions = message.Entities.Select(p => (p.Id, p.Team, p.Position.X, p.Position.Y)).ToList()
+                    EntityPositions = message.Entities.Select(p => (p.Id, p.Team, p.Position.X, p.Position.Y, p.IsDead)).ToList(),
+                    Bullets = message.Bullets.Select(b => new BulletData()
+                    {
+                        CreationTime = b.CreationTime.ToDateTime().ToLocalTime(),
+                        StartPosX = b.StartPos.X,
+                        StartPosY = b.StartPos.Y,
+                        EndPosX = b.EndPos.X,
+                        EndPosY = b.EndPos.Y,
+                        Team = b.Team,
+                        Speed = b.Speed,
+                        Id = b.Id,
+                    }).ToList(),
                 });
             }
         }
