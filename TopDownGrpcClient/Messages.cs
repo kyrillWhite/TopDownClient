@@ -51,6 +51,9 @@ namespace TopDownGrpcClient
                         LastId = playerData.LastInputId,
                         X = playerData.Position.X,
                         Y = playerData.Position.Y,
+                        HpPercent = playerData.HpPercent,
+                        ReloadPercent = playerData.ReloadPercent,
+                        BulletsCount = playerData.BulletsCount,
                     });
                 }
             }

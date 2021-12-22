@@ -102,7 +102,7 @@ namespace TopDown
             InitialiseEntities();
             Messages.GetUpdate();
             Messages.RetrieveUpdateEvent += e => ServerUpdate(e);
-            Messages.PlayerDataEvent += e => UpdatePlayerPosition(e);
+            Messages.PlayerDataEvent += e => UpdatePlayerState(e);
         }
 
         public override void Update(MainGame game)
@@ -445,7 +445,7 @@ namespace TopDown
             }
         }
 
-        private void UpdatePlayerPosition(PlayerDataEventArgs e)
+        private void UpdatePlayerState(PlayerDataEventArgs e)
         {
             lock (Player)
             {
@@ -486,6 +486,21 @@ namespace TopDown
                 }
                 deletedInputs.ForEach(inid => _inputDict.Remove(inid));
             }
+            var hpRect = UiObjects["hp_bar"].Rectangle;
+            UiObjects["hp_bar"].Rectangle = new RectangleF(hpRect.Min,
+                new Vector2(hpRect.Min.X + Constants.HpBarWidth * e.HpPercent, hpRect.Max.Y));
+
+            if (e.ReloadPercent != 0) {
+                UiObjects["reload_bar"].Visible = true;
+                var rRect = UiObjects["reload_bar"].Rectangle;
+                UiObjects["reload_bar"].Rectangle = new RectangleF(rRect.Min,
+                    new Vector2(rRect.Min.X + Constants.HpBarWidth * Math.Min(e.ReloadPercent, 1), rRect.Max.Y));
+            }
+            else
+            {
+                UiObjects["reload_bar"].Visible = false;
+            }
+            _capacity.Text = e.BulletsCount;
         }
 
         private void FixCollision()
