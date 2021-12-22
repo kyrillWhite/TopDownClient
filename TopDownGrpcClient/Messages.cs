@@ -68,8 +68,8 @@ namespace TopDownGrpcClient
                         InputId = input.Key,
                         Id = playerId,
                     };
-                    sendControllCall.RequestStream.WriteAsync(controlStateReq).Wait();
-                    sendControllCall.ResponseStream.MoveNext().Wait();
+                    sendControllCall.RequestStream.WriteAsync(controlStateReq);
+                    sendControllCall.ResponseStream.MoveNext();
                     var playerData = sendControllCall.ResponseStream.Current;
                     if (playerData != null)
                     {
@@ -100,29 +100,37 @@ namespace TopDownGrpcClient
                 using var retrieveControlCall = _client.RetrieveUpdate(new Google.Protobuf.WellKnownTypes.Empty());
                 await foreach (var message in retrieveControlCall.ResponseStream.ReadAllAsync())
                 {
-                    if (!CanUpdate)
-                        CanUpdateToken.Token.WaitHandle.WaitOne();
-
-                    RetrieveUpdateEvent?.Invoke(new RetrieveUpdateEventArgs()
+                    try
                     {
-                        EntityPositions = message.Entities.Select(p => (p.Id, p.Team, p.Position.X, p.Position.Y, p.IsDead)).ToList(),
-                        Bullets = message.Bullets.Select(b => new BulletData()
+                        if (!CanUpdate)
+                            CanUpdateToken.Token.WaitHandle.WaitOne();
+
+                        RetrieveUpdateEvent?.Invoke(new RetrieveUpdateEventArgs()
                         {
-                            CreationTime = b.CreationTime.ToDateTime().ToLocalTime(),
-                            StartPosX = b.StartPos.X,
-                            StartPosY = b.StartPos.Y,
-                            EndPosX = b.EndPos.X,
-                            EndPosY = b.EndPos.Y,
-                            Team = b.Team,
-                            Speed = b.Speed,
-                            Id = b.Id,
-                        }).ToList(),
-                        FirstTeamScore = message.RoundData.FirstTeamScore,
-                        SecondTeamScore = message.RoundData.SecondTeamScore,
-                        CurrentRound = message.RoundData.CurrentRound,
-                        IsEndGame = message.RoundData.IsEndGame,
-                        RoundTimeLeft = message.RoundData.RoundTimeLeft.ToTimeSpan(),
-                    });
+                            EntityPositions = message.Entities.Select(p => (p.Id, p.Team, p.Position.X, p.Position.Y, p.IsDead)).ToList(),
+                            Bullets = message.Bullets.Select(b => new BulletData()
+                            {
+                                CreationTime = b.CreationTime.ToDateTime().ToLocalTime(),
+                                StartPosX = b.StartPos.X,
+                                StartPosY = b.StartPos.Y,
+                                EndPosX = b.EndPos.X,
+                                EndPosY = b.EndPos.Y,
+                                Team = b.Team,
+                                Speed = b.Speed,
+                                Id = b.Id,
+                            }).ToList(),
+                            FirstTeamScore = message.RoundData.FirstTeamScore,
+                            SecondTeamScore = message.RoundData.SecondTeamScore,
+                            CurrentRound = message.RoundData.CurrentRound,
+                            IsEndGame = message.RoundData.IsEndGame,
+                            RoundTimeLeft = message.RoundData.RoundTimeLeft.ToTimeSpan(),
+                        });
+                    }
+                    catch (Exception e)
+                    {
+                        Exception = e;
+                        Close();
+                    }
                 }
             }
             catch (Exception e)
@@ -151,7 +159,7 @@ namespace TopDownGrpcClient
 
         public static void SendGun(string playerId, int type)
         {
-            _client.SendGunType(new GunType() {PlayerId = playerId, Type = type });
+            _client.SendGunType(new GunType() { PlayerId = playerId, Type = type });
         }
     }
 }

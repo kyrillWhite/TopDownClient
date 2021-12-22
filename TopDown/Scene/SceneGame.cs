@@ -113,27 +113,11 @@ namespace TopDown
             else
             {
 
-                // Server code: time count
-                if (!_finalScore)
-                {
-                    _roundTime += game.TargetElapsedTime.TotalSeconds;
-                }
-                if (_start && _roundTime >= Constants.StartTime)
-                {
-                    _roundTime = 0;
-                    _start = false;
-                    //_gun = new Gun(_player.GunType);
-                    //_player.CurBulletsCount = _gun.Capacity;
-                    //_capacity.Text = $"{_player.CurBulletsCount}/{_gun.Capacity}";
-                    CloseWeaponChoose();
-                }
-                //////////////////////////
-                // Get round time from server // get end of start
 
-            if (!_pause && !_startRound)
-            {
-                MoveControl();
-            }
+                if (!_pause && !_startRound)
+                {
+                    MoveControl();
+                }
 
                 lock (_inputDict)
                 {
@@ -174,47 +158,47 @@ namespace TopDown
                 }
 
 
-            // Server code: check team win round
-            //if (!_finalScore)
-            //{
-            //    var roundEnd = false;
-            //    if (!_players.Any(p => p.Value.Team == 2))
-            //    {
-            //        _rounds[0]++;
-            //        roundEnd = true;
-            //    }
-            //    if (!_players.Any(p => p.Value.Team == 1))
-            //    {
-            //        _rounds[1]++;
-            //        roundEnd = true;
-            //    }
-            //    if (_roundTime > Constants.RoundTime)
-            //    {
-            //        roundEnd = true;
-            //        var t1Count = _players.Where(p => p.Value.Team == 1).Count();
-            //        var t2Count = _players.Where(p => p.Value.Team == 2).Count();
-            //        if (t1Count != t2Count)
-            //        {
-            //            _rounds[t1Count > t2Count ? 0 : 1]++;
-            //        }
-            //    }
-            //    if (roundEnd)
-            //    {
-            //        _allRounds++;
-            //        _score.Text = $"{_rounds[0]} : {_rounds[1]}";
-            //        if (_allRounds < Constants.RoundsCount)
-            //        {
-            //            InitializeRound(false);
-            //        }
-            //        else
-            //        {
-            //            InitializeRound(true);
-            //            _pause = true;
-            //            _finalScore = true;
-            //            FinalScore();
-            //        }
-            //    }
-            //}
+                // Server code: check team win round
+                //if (!_finalScore)
+                //{
+                //    var roundEnd = false;
+                //    if (!_players.Any(p => p.Value.Team == 2))
+                //    {
+                //        _rounds[0]++;
+                //        roundEnd = true;
+                //    }
+                //    if (!_players.Any(p => p.Value.Team == 1))
+                //    {
+                //        _rounds[1]++;
+                //        roundEnd = true;
+                //    }
+                //    if (_roundTime > Constants.RoundTime)
+                //    {
+                //        roundEnd = true;
+                //        var t1Count = _players.Where(p => p.Value.Team == 1).Count();
+                //        var t2Count = _players.Where(p => p.Value.Team == 2).Count();
+                //        if (t1Count != t2Count)
+                //        {
+                //            _rounds[t1Count > t2Count ? 0 : 1]++;
+                //        }
+                //    }
+                //    if (roundEnd)
+                //    {
+                //        _allRounds++;
+                //        _score.Text = $"{_rounds[0]} : {_rounds[1]}";
+                //        if (_allRounds < Constants.RoundsCount)
+                //        {
+                //            InitializeRound(false);
+                //        }
+                //        else
+                //        {
+                //            InitializeRound(true);
+                //            _pause = true;
+                //            _finalScore = true;
+                //            FinalScore();
+                //        }
+                //    }
+                //}
 
                 ////////////////////////
                 ///Send reinitialize command + new score
