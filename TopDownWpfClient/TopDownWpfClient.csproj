@@ -16,4 +16,9 @@
     <PackageReference Include="PropertyChanged.Fody" Version="3.4.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\TopDownGrpcClient\TopDownGrpcClient.csproj" />
+    <ProjectReference Include="..\TopDown\TopDown.csproj" />
+  </ItemGroup>
+
 </Project>

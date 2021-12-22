@@ -18,10 +18,13 @@ namespace TopDownGrpcClient
         public delegate void PlayerDataDelegate(PlayerDataEventArgs e);
         public static event RetrieveEntitiesDelegate RetrieveEntitiesEvent;
         public static event PlayerDataDelegate PlayerDataEvent;
+        public static string ServerAddress;
+        public static string ServerPort;
 
         public static void Initialize()
         {
-            var _chanel = GrpcChannel.ForAddress("http://26.202.152.148:5000");
+            // var _chanel = GrpcChannel.ForAddress("http://26.202.152.148:5000");
+            var _chanel = GrpcChannel.ForAddress($"http://{ServerAddress}:{ServerPort}");
             _client = new TopDownServer.TopDownServerClient(_chanel);
             sendControllCall = _client.UpdateUserState();
         }

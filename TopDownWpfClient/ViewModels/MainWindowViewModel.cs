@@ -2,8 +2,11 @@
 using System.Windows.Controls;
 using System.Windows.Input;
 using Microsoft.AnyContainer;
+using TopDown;
+using TopDownGrpcClient;
 using TopDownWpfClient.Services.Pages;
 using TopDownWpfClient.Services.Windows;
+using TopDownWpfClient.Views;
 
 namespace TopDownWpfClient.ViewModels {
 	public class MainWindowViewModel : BaseViewModel {
@@ -43,7 +46,15 @@ namespace TopDownWpfClient.ViewModels {
 		}
 
 		private void SearchGame() {
-
+			//Get ServerAddress and ServerPort from TopDownMainServer
+			Messages.ServerAddress = "26.202.152.148";
+			Messages.ServerPort = "5000";
+			//Open game with acquired ServerAddress and ServerPort 
+			using (var game = new MainGame()) {
+				StaticResolver.Resolve<IWindowManager>().GetView(this).Visibility = Visibility.Collapsed;
+				game.Run();
+				StaticResolver.Resolve<IWindowManager>().GetView(this).Visibility = Visibility.Visible;
+			}
 		}
 	}
 }
