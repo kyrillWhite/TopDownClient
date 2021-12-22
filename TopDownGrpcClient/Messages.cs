@@ -21,7 +21,7 @@ namespace TopDownGrpcClient
 
         public static void Initialize()
         {
-            var _chanel = GrpcChannel.ForAddress("http://26.202.152.148:5000");
+            var _chanel = GrpcChannel.ForAddress("http://26.104.61.15:5000");
             _client = new TopDownServer.TopDownServerClient(_chanel);
             sendControllCall = _client.UpdateUserState();
         }
@@ -56,9 +56,9 @@ namespace TopDownGrpcClient
             }
         }
 
-        public static async Task GetUpdate()
+        public static async Task GetUpdate( string id)
         {
-            using var retrieveControlCall = _client.RetrieveUpdate(new Google.Protobuf.WellKnownTypes.Empty());
+            using var retrieveControlCall = _client.RetrieveUpdate(new PlayerId() {Id = id } );
             await foreach (var message in retrieveControlCall.ResponseStream.ReadAllAsync())
             {
                 RetrieveUpdateEvent?.Invoke(new RetrieveUpdateEventArgs()
