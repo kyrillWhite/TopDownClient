@@ -78,7 +78,7 @@ namespace TopDownWpfClient.ViewModels {
 
 				string address = a.Result;
 
-				var b = serviceClient.GetServerPortAsync(false);
+				var b = serviceClient.GetServerPortAsync(true);
 				b.Wait();
 				string port = b.Result;
 
