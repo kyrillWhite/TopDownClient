@@ -10,6 +10,7 @@ namespace TopDownGrpcClient
         public float Y { get; set; }
         public float HpPercent { get; set; }
         public float ReloadPercent { get; set; }
-        public string BulletsCount { get; set; }
+        public int BulletsCount { get; set; }
+        public int Capacity { get; set; }
     }
 }

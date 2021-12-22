@@ -13,6 +13,7 @@ namespace TopDown
         public int Hp { get => _hp; set => _hp = value; }
         public int GunType { get => _gunType; set => _gunType = value; }
         public int CurBulletsCount { get => _curBulletsCount; set => _curBulletsCount = value; }
+        public bool IsDead { get; set; } = false;
 
         public Player(
             string texture,
