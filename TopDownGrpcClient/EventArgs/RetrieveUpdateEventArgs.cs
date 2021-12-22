@@ -11,5 +11,10 @@ namespace TopDownGrpcClient
     {
         public List<(string, int, float, float, bool)> EntityPositions { get; set; }
         public List<BulletData> Bullets { get; set; }
+        public int FirstTeamScore { get; set; }
+        public int SecondTeamScore { get; set; }
+        public int CurrentRound { get; set; }
+        public bool IsEndGame { get; set; }
+        public TimeSpan RoundTimeLeft { get; set; }
     }
 }

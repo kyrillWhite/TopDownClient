@@ -28,6 +28,10 @@ namespace TopDown
 
         public virtual void Draw(SpriteBatch spriteBranch)
         {
+            if (this is Player { IsDead: true })
+            {
+                return;
+            }
             var rect = (_rectangle * GameData.Scale).GetRectangle();
             if (!(this is UIObject)) {
                 rect.Location -= GameData.Camera.ToPoint();
