@@ -54,6 +54,7 @@ namespace TopDownGrpcClient
                         HpPercent = playerData.HpPercent,
                         ReloadPercent = playerData.ReloadPercent,
                         BulletsCount = playerData.BulletsCount,
+                        Capacity = playerData.Capacity,
                     });
                 }
             }
@@ -78,6 +79,11 @@ namespace TopDownGrpcClient
                         Speed = b.Speed,
                         Id = b.Id,
                     }).ToList(),
+                    FirstTeamScore = message.RoundData.FirstTeamScore,
+                    SecondTeamScore = message.RoundData.SecondTeamScore,
+                    CurrentRound = message.RoundData.CurrentRound,
+                    IsEndGame = message.RoundData.IsEndGame,
+                    RoundTimeLeft = message.RoundData.RoundTimeLeft.ToTimeSpan(),
                 });
             }
         }
@@ -97,6 +103,11 @@ namespace TopDownGrpcClient
         public static string GetPlayerId()
         {
             return _client.GetPlayerId(new Google.Protobuf.WellKnownTypes.Empty()).Id;
+        }
+
+        public static void SendGun(string playerId, int type)
+        {
+            _client.SendGunType(new GunType() {PlayerId = playerId, Type = type });
         }
     }
 }
