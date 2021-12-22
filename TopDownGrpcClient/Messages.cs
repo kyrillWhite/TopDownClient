@@ -63,7 +63,7 @@ namespace TopDownGrpcClient
             {
                 RetrieveUpdateEvent?.Invoke(new RetrieveUpdateEventArgs()
                 {
-                    EntityPositions = message.Entities.Select(p => (p.Id, p.Team, p.Position.X, p.Position.Y)).ToList(),
+                    EntityPositions = message.Entities.Select(p => (p.Id, p.Team, p.Position.X, p.Position.Y, p.IsDead)).ToList(),
                     Bullets = message.Bullets.Select(b => new BulletData()
                     {
                         CreationTime = b.CreationTime.ToDateTime().ToLocalTime(),

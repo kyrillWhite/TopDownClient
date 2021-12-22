@@ -394,6 +394,11 @@ namespace TopDown
                     Player entity = _players[entityPos.Item1];
                     if (entity != Player)
                     {
+                        if (entityPos.Item5)
+                        {
+                            _players.Remove(entityPos.Item1);
+                            continue;
+                        }
                         Positions[entityPos.Item1].Add((DateTime.Now, new Vector2(entityPos.Item3, entityPos.Item4)));
                         Positions[entityPos.Item1].RemoveAll(p => (DateTime.Now - p.Item1).Seconds > 10);
                     }
@@ -512,7 +517,11 @@ namespace TopDown
 
         private void CreateBullets(RetrieveUpdateEventArgs e)
         {
-            var newBullets = e.Bullets.Where(b => b.Id >= _lastBulletId);
+            if (e.Bullets.Count == 0)
+            {
+                return;
+            }
+            var newBullets = e.Bullets.Where(b => b.Id >= _lastBulletId).ToList();
             _lastBulletId = e.Bullets.Max(b => b.Id) + 1;
             foreach (var bulletData in newBullets)
             {

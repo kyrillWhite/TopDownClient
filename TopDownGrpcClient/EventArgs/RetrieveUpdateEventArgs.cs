@@ -9,7 +9,7 @@ namespace TopDownGrpcClient
 {
     public class RetrieveUpdateEventArgs : EventArgs
     {
-        public List<(string, int, float, float)> EntityPositions { get; set; }
+        public List<(string, int, float, float, bool)> EntityPositions { get; set; }
         public List<BulletData> Bullets { get; set; }
     }
 }
