@@ -81,28 +81,18 @@ namespace TopDown
             UiObjects["shotgun_image"].isHovered += SetHandCursor;
         }
 
-        public void InitializeServerPart()
+        public void InitializeMap(string map, string playerId, List<(string, int, float, float)> entities)
         {
             //_map = new Map("C:/Users/kirill/Desktop/Map/map.txt", 2);
             //SaveMap("map1.xml");
-            var mapXml = Messages.GetMap();
-            if (string.IsNullOrEmpty(mapXml))
-            {
-                // Выход
-            }
-            else
-            {
-                LoadMap(mapXml);
-            }
-            _playerId = Messages.GetPlayerId();
-            if (string.IsNullOrEmpty(_playerId))
-            {
-                // Выход
-            }
-            InitialiseEntities();
-            Messages.GetUpdate();
-            Messages.RetrieveUpdateEvent += e => ServerUpdate(e);
-            Messages.PlayerDataEvent += e => UpdatePlayerState(e);
+            LoadMap(map);
+            _playerId = playerId;
+            InitialiseEntities(entities);
+            Messages.RetrieveUpdateEvent += ServerUpdate;
+            Messages.PlayerDataEvent += UpdatePlayerState;
+
+            Messages.CanUpdate = true;
+            Messages.CanUpdateToken.Cancel();
         }
 
         public override void Update(MainGame game)
@@ -363,9 +353,8 @@ namespace TopDown
             _dead = false;
         }
 
-        private void InitialiseEntities()
+        private void InitialiseEntities(List<(string, int, float, float)> entities)
         {
-            var entities = Messages.GetEntities();
             foreach (var entityPos in entities)
             {
                 Player entity = CreatePlayer(new Vector2(entityPos.Item3, entityPos.Item4), entityPos.Item2);

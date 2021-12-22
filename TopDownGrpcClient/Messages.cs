@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using Grpc.Net.Client;
 using Grpc.Core;
 using TopDownGrpcGameServer;
@@ -12,6 +13,7 @@ namespace TopDownGrpcClient
 {
     public static class Messages
     {
+        static GrpcChannel _chanel;
         static TopDownServer.TopDownServerClient _client;
         static AsyncDuplexStreamingCall<ControlStateRequest, PlayerDataResponse> sendControllCall;
         public delegate void RetrieveUpdateDelegate(RetrieveUpdateEventArgs e);
@@ -19,9 +21,21 @@ namespace TopDownGrpcClient
         public static event RetrieveUpdateDelegate RetrieveUpdateEvent;
         public static event PlayerDataDelegate PlayerDataEvent;
 
+        public static bool CanUpdate { get; set; } = false;
+        public static CancellationTokenSource CanUpdateToken = new CancellationTokenSource();
+
         public static void Initialize()
         {
-            var _chanel = GrpcChannel.ForAddress("http://26.202.152.148:5000");
+            if (sendControllCall != null)
+            {
+                sendControllCall.Dispose();
+            }
+            if (_chanel != null)
+            {
+                _chanel.Dispose();
+            }
+
+            _chanel = GrpcChannel.ForAddress("http://26.104.61.15:5000");
             _client = new TopDownServer.TopDownServerClient(_chanel);
             sendControllCall = _client.UpdateUserState();
         }
@@ -41,8 +55,8 @@ namespace TopDownGrpcClient
                     InputId = input.Key,
                     Id = playerId,
                 };
-                sendControllCall.RequestStream.WriteAsync(controlStateReq);
-                sendControllCall.ResponseStream.MoveNext();
+                sendControllCall.RequestStream.WriteAsync(controlStateReq).Wait();
+                sendControllCall.ResponseStream.MoveNext().Wait();
                 var playerData = sendControllCall.ResponseStream.Current;
                 if (playerData != null)
                 {
@@ -64,6 +78,9 @@ namespace TopDownGrpcClient
             using var retrieveControlCall = _client.RetrieveUpdate(new Google.Protobuf.WellKnownTypes.Empty());
             await foreach (var message in retrieveControlCall.ResponseStream.ReadAllAsync())
             {
+                if (!CanUpdate)
+                    CanUpdateToken.Token.WaitHandle.WaitOne();
+
                 RetrieveUpdateEvent?.Invoke(new RetrieveUpdateEventArgs()
                 {
                     EntityPositions = message.Entities.Select(p => (p.Id, p.Team, p.Position.X, p.Position.Y, p.IsDead)).ToList(),
