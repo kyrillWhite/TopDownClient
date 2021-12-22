@@ -33,7 +33,6 @@ namespace TopDown
         private bool _dead = false;
         private bool _finalScore = false;
         private double _roundTime = 0.0f; // To server
-        //private Gun _gun;
         private Dictionary<int, Input> _inputDict = new Dictionary<int, Input>();
         private int _inputId = 0;
         private int _lastSendedInputId = 0;
@@ -389,18 +388,28 @@ namespace TopDown
         {
             lock (Positions)
             {
-                foreach (var entityPos in e.EntityPositions)
+                lock (_players)
                 {
-                    Player entity = _players[entityPos.Item1];
-                    if (entity != Player)
+                    foreach (var entityPos in e.EntityPositions)
                     {
-                        if (entityPos.Item5)
+                        if (_players.ContainsKey(entityPos.Item1))
                         {
-                            _players.Remove(entityPos.Item1);
-                            continue;
+                            Player entity = _players[entityPos.Item1];
+                            if (entity != Player)
+                            {
+                                if (entityPos.Item5)
+                                {
+                                    lock (GameData.GameObjects)
+                                    {
+                                        GameData.GameObjects.Remove(_players[entityPos.Item1]); // Можно заменить на текстурку трупа
+                                        _players.Remove(entityPos.Item1);
+                                    }
+                                    continue;
+                                }
+                                Positions[entityPos.Item1].Add((DateTime.Now, new Vector2(entityPos.Item3, entityPos.Item4)));
+                                Positions[entityPos.Item1].RemoveAll(p => (DateTime.Now - p.Item1).Seconds > 10);
+                            }
                         }
-                        Positions[entityPos.Item1].Add((DateTime.Now, new Vector2(entityPos.Item3, entityPos.Item4)));
-                        Positions[entityPos.Item1].RemoveAll(p => (DateTime.Now - p.Item1).Seconds > 10);
                     }
                 }
             }
@@ -538,6 +547,7 @@ namespace TopDown
                 bullet.StartPoint = startShootPos;
                 bullet.EndPoint = _to;
                 bullet.IntersectingWall = GetIntersectingWall(startShootPos, _to);
+                bullet.Team = bulletData.Team;
                 _bullets.Add(bulletData.Id, bullet);
             }
         }

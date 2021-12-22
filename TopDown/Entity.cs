@@ -27,7 +27,7 @@ namespace TopDown
 
         public void Move()
         {
-            Translate(_speed);
+            Translate(_speed / 60);
         }
     }
 }
