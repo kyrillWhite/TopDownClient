@@ -1,7 +1,10 @@
-﻿using System.Windows;
+﻿using System;
+using System.ServiceModel;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Microsoft.AnyContainer;
+using ServiceReference1;
 using TopDown;
 using TopDownGrpcClient;
 using TopDownWpfClient.Services.Pages;
@@ -17,6 +20,8 @@ namespace TopDownWpfClient.ViewModels {
 		public Page SearchGamePage { get; set; }
 
 		public Page CurrentPage { get; set; }
+
+		MyServiceClient client = null;
 
 		public MainWindowViewModel() {
 			var pageManager = StaticResolver.Resolve<IPageManager>();
@@ -47,8 +52,12 @@ namespace TopDownWpfClient.ViewModels {
 
 		private void SearchGame() {
 			//Get ServerAddress and ServerPort from TopDownMainServer
-			Messages.ServerAddress = "26.202.152.148";
-			Messages.ServerPort = "5000";
+			var server = GetServer();
+			
+			Messages.ServerAddress = server.Item1;
+			// Messages.ServerAddress = "26.202.152.148";
+			Messages.ServerPort = server.Item2;
+			// Messages.ServerPort = "5000";
 			//Open game with acquired ServerAddress and ServerPort 
 			using (var game = new MainGame()) {
 				StaticResolver.Resolve<IWindowManager>().GetView(this).Visibility = Visibility.Collapsed;
@@ -56,5 +65,33 @@ namespace TopDownWpfClient.ViewModels {
 				StaticResolver.Resolve<IWindowManager>().GetView(this).Visibility = Visibility.Visible;
 			}
 		}
-	}
+
+		
+
+        private (string, string) GetServer()
+        {
+            try
+            {
+				var serviceClient = new MyServiceClient(MyServiceClient.EndpointConfiguration.BasicHttpBinding_IMyService);
+				var a = serviceClient.GetServerAddressAsync();
+                a.Wait();
+
+				string address = a.Result;
+
+				var b = serviceClient.GetServerPortAsync(false);
+				b.Wait();
+				string port = b.Result;
+
+                return (address, port);
+            }
+            catch (Exception ex)
+            {
+	            Console.WriteLine(ex);
+	            Console.WriteLine(ex.InnerException);
+                client = null;
+            }
+
+            throw new Exception();
+        }
+    }
 }
