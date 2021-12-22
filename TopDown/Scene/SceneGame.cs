@@ -22,7 +22,7 @@ namespace TopDown
         private Dictionary<int, Bullet> _bullets = new Dictionary<int, Bullet>();
         private Dictionary<string, Player> _players = new Dictionary<string, Player>();
         private static Dictionary<string, List<(DateTime, Vector2)>> Positions = new Dictionary<string, List<(DateTime, Vector2)>>();
-
+        private InfoLabel _infoLabel = new InfoLabel(new Vector2(10, 10), "0 : 0", Color.Red, 0.99f, true);
         private Label _score = new Label(new Vector2(20, 20), "0 : 0", Color.Black, 0.99f, true);
         private Label _timer = new Label(new Vector2(600, 20), "2:00", Color.Black, 0.99f, true);
         private Label _capacity = new Label(new Vector2(20, 600), "", Color.Black, 0.99f, true);
@@ -77,30 +77,22 @@ namespace TopDown
             UiObjects["sniper_rifle_image"].isHovered += SetHandCursor;
             UiObjects["rifle_image"].isHovered += SetHandCursor;
             UiObjects["shotgun_image"].isHovered += SetHandCursor;
+
+            _infoLabel.Text = "";
         }
 
-        public void InitializeServerPart()
+        public void InitializeMap(string map, string playerId, List<(string, int, float, float)> entities)
         {
             //_map = new Map("C:/Users/kirill/Desktop/Map/map.txt", 2);
             //SaveMap("map1.xml");
-            var mapXml = Messages.GetMap();
-            if (string.IsNullOrEmpty(mapXml))
-            {
-                // Выход
-            }
-            else
-            {
-                LoadMap(mapXml);
-            }
-            _playerId = Messages.GetPlayerId();
-            if (string.IsNullOrEmpty(_playerId))
-            {
-                // Выход
-            }
-            InitialiseEntities();
-            Messages.GetUpdate();
-            Messages.RetrieveUpdateEvent += e => ServerUpdate(e);
-            Messages.PlayerDataEvent += e => UpdatePlayerState(e);
+            LoadMap(map);
+            _playerId = playerId;
+            InitialiseEntities(entities);
+            Messages.RetrieveUpdateEvent += ServerUpdate;
+            Messages.PlayerDataEvent += UpdatePlayerState;
+
+            Messages.CanUpdate = true;
+            Messages.CanUpdateToken.Cancel();
         }
 
         public override void Update(MainGame game)
@@ -110,94 +102,107 @@ namespace TopDown
                 game.Exit();
             }
 
-            if (!_pause && !_startRound)
+            if (Messages.Exception != null)
             {
-                MoveControl();
-            }
-
-            lock (_inputDict)
-            {
-                if (!_pause)
+                if (string.IsNullOrEmpty(_infoLabel.Text))
                 {
-                    Messages.SendControlState(_inputDict.Where(i => i.Key > _lastSendedInputId)
-                        .ToDictionary(i => i.Key, i => i.Value), _playerId);
+                    File.AppendAllText("log.txt", Messages.Exception.Message);
                 }
-                else
+                _infoLabel.Text = "Connection error. See log.txt";
+            }
+            else
+            {
+
+
+                if (!_pause && !_startRound)
                 {
-                    Messages.SendControlState(new Dictionary<int, Input>(), _playerId);
+                    MoveControl();
                 }
-                _lastSendedInputId = _inputDict.Count == 0 ? 0 : _inputDict.Max(i => i.Key);
-            }
-            lock (Positions)
-            {
-                UpdateEntitiesPositionsLocal();
-            }
-            lock (_bullets)
-            {
-                foreach (var bullet in _bullets)
+
+                lock (_inputDict)
                 {
-                    bullet.Value.Move();
+                    if (!_pause)
+                    {
+                        Messages.SendControlState(_inputDict.Where(i => i.Key > _lastSendedInputId)
+                            .ToDictionary(i => i.Key, i => i.Value), _playerId);
+                    }
+                    else
+                    {
+                        Messages.SendControlState(new Dictionary<int, Input>(), _playerId);
+                    }
+                    _lastSendedInputId = _inputDict.Count == 0 ? 0 : _inputDict.Max(i => i.Key);
                 }
-                DeleteBulletsLocal();
+                lock (Positions)
+                {
+                    UpdateEntitiesPositionsLocal();
+                }
+                lock (_bullets)
+                {
+                    foreach (var bullet in _bullets)
+                    {
+                        bullet.Value.Move();
+                    }
+                    DeleteBulletsLocal();
+                }
+
+
+                lock (Player)
+                {
+                    var mPos = Control.GetMousePosition();
+                    var cmPos = mPos - GameData.WindowSize / 2;
+                    cmPos.X = cmPos.X > GameData.WindowSize.X / 2 ? GameData.WindowSize.X / 2 : cmPos.X;
+                    cmPos.X = cmPos.X < -GameData.WindowSize.X / 2 ? -GameData.WindowSize.X / 2 : cmPos.X;
+                    cmPos.Y = cmPos.Y > GameData.WindowSize.Y / 2 ? GameData.WindowSize.Y / 2 : cmPos.Y;
+                    cmPos.Y = cmPos.Y < -GameData.WindowSize.Y / 2 ? -GameData.WindowSize.Y / 2 : cmPos.Y;
+                    GameData.Camera = Player.Rectangle.Center + cmPos * Constants.MaxCameraOffset;
+                }
+
+
+                // Server code: check team win round
+                //if (!_finalScore)
+                //{
+                //    var roundEnd = false;
+                //    if (!_players.Any(p => p.Value.Team == 2))
+                //    {
+                //        _rounds[0]++;
+                //        roundEnd = true;
+                //    }
+                //    if (!_players.Any(p => p.Value.Team == 1))
+                //    {
+                //        _rounds[1]++;
+                //        roundEnd = true;
+                //    }
+                //    if (_roundTime > Constants.RoundTime)
+                //    {
+                //        roundEnd = true;
+                //        var t1Count = _players.Where(p => p.Value.Team == 1).Count();
+                //        var t2Count = _players.Where(p => p.Value.Team == 2).Count();
+                //        if (t1Count != t2Count)
+                //        {
+                //            _rounds[t1Count > t2Count ? 0 : 1]++;
+                //        }
+                //    }
+                //    if (roundEnd)
+                //    {
+                //        _allRounds++;
+                //        _score.Text = $"{_rounds[0]} : {_rounds[1]}";
+                //        if (_allRounds < Constants.RoundsCount)
+                //        {
+                //            InitializeRound(false);
+                //        }
+                //        else
+                //        {
+                //            InitializeRound(true);
+                //            _pause = true;
+                //            _finalScore = true;
+                //            FinalScore();
+                //        }
+                //    }
+                //}
+
+                ////////////////////////
+                ///Send reinitialize command + new score
             }
-
-
-            lock (Player)
-            {
-                var mPos = Control.GetMousePosition();
-                var cmPos = mPos - GameData.WindowSize / 2;
-                cmPos.X = cmPos.X > GameData.WindowSize.X / 2 ? GameData.WindowSize.X / 2 : cmPos.X;
-                cmPos.X = cmPos.X < -GameData.WindowSize.X / 2 ? -GameData.WindowSize.X / 2 : cmPos.X;
-                cmPos.Y = cmPos.Y > GameData.WindowSize.Y / 2 ? GameData.WindowSize.Y / 2 : cmPos.Y;
-                cmPos.Y = cmPos.Y < -GameData.WindowSize.Y / 2 ? -GameData.WindowSize.Y / 2 : cmPos.Y;
-                GameData.Camera = Player.Rectangle.Center + cmPos * Constants.MaxCameraOffset;
-            }
-
-
-            // Server code: check team win round
-            //if (!_finalScore)
-            //{
-            //    var roundEnd = false;
-            //    if (!_players.Any(p => p.Value.Team == 2))
-            //    {
-            //        _rounds[0]++;
-            //        roundEnd = true;
-            //    }
-            //    if (!_players.Any(p => p.Value.Team == 1))
-            //    {
-            //        _rounds[1]++;
-            //        roundEnd = true;
-            //    }
-            //    if (_roundTime > Constants.RoundTime)
-            //    {
-            //        roundEnd = true;
-            //        var t1Count = _players.Where(p => p.Value.Team == 1).Count();
-            //        var t2Count = _players.Where(p => p.Value.Team == 2).Count();
-            //        if (t1Count != t2Count)
-            //        {
-            //            _rounds[t1Count > t2Count ? 0 : 1]++;
-            //        }
-            //    }
-            //    if (roundEnd)
-            //    {
-            //        _allRounds++;
-            //        _score.Text = $"{_rounds[0]} : {_rounds[1]}";
-            //        if (_allRounds < Constants.RoundsCount)
-            //        {
-            //            InitializeRound(false);
-            //        }
-            //        else
-            //        {
-            //            InitializeRound(true);
-            //            _pause = true;
-            //            _finalScore = true;
-            //            FinalScore();
-            //        }
-            //    }
-            //}
-
-            ////////////////////////
-            ///Send reinitialize command + new score
 
             ESCPress();
 
@@ -222,9 +227,8 @@ namespace TopDown
             ShowWeaponChoose();
         }
 
-        private void InitialiseEntities()
+        private void InitialiseEntities(List<(string, int, float, float)> entities)
         {
-            var entities = Messages.GetEntities();
             foreach (var entityPos in entities)
             {
                 Player entity = CreatePlayer(new Vector2(entityPos.Item3, entityPos.Item4), entityPos.Item2);

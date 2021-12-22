@@ -20,7 +20,6 @@ namespace TopDown
 
         protected override void Initialize()
         {
-            TopDownGrpcClient.Messages.Initialize();
             _graphics.PreferredBackBufferWidth = (int)(1280 * GameData.Scale);
             _graphics.PreferredBackBufferHeight = (int)(720 * GameData.Scale);
             _graphics.ApplyChanges();
