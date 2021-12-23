@@ -1,7 +1,7 @@
 {
   "ExtendedData": {
     "inputs": [
-      "http://26.101.252.249:5003/MyService"
+      "http://26.104.61.15:5003/MyService"
     ],
     "collectionTypes": [
       "System.Array",

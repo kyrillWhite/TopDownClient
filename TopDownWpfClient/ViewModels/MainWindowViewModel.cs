@@ -37,7 +37,7 @@ namespace TopDownWpfClient.ViewModels {
 
 		public string Status { get; set; }
 
-		public double WindowScale { get; set; }
+		public double WindowScale { get; set; } = 1;
 
 		public static MainWindowViewModel Instance { get; set; }
 
@@ -154,6 +154,7 @@ namespace TopDownWpfClient.ViewModels {
 					mainWindow.Dispatcher.Invoke(() => {
 						mainWindow.Visibility = Visibility.Collapsed;
 					});
+					game.Scale = WindowScale;
 					game.Run();
 					mainWindow.Dispatcher.Invoke(() => {
 						mainWindow.Visibility = Visibility.Visible;
