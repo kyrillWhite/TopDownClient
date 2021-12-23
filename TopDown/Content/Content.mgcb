@@ -320,7 +320,7 @@
 /processorParam:TextureFormat=Color
 /build:textures/UI/label_2_win.png
 
-#begin textures/UI/label_searching.png
+#begin textures/UI/label_loading.png
 /importer:TextureImporter
 /processor:TextureProcessor
 /processorParam:ColorKeyColor=255,0,255,255
@@ -330,19 +330,7 @@
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
-/build:textures/UI/label_searching.png
-
-#begin textures/UI/map_preview.png
-/importer:TextureImporter
-/processor:TextureProcessor
-/processorParam:ColorKeyColor=255,0,255,255
-/processorParam:ColorKeyEnabled=True
-/processorParam:GenerateMipmaps=False
-/processorParam:PremultiplyAlpha=True
-/processorParam:ResizeToPowerOfTwo=False
-/processorParam:MakeSquare=False
-/processorParam:TextureFormat=Color
-/build:textures/UI/map_preview.png
+/build:textures/UI/label_loading.png
 
 #begin textures/UI/menu_plane.png
 /importer:TextureImporter
