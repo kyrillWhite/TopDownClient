@@ -24,6 +24,9 @@ namespace TopDownWpfClient.ViewModels {
 		private SettingsPageViewModel _settingsPageVM;
 		public Page SettingsPage { get; set; }
 
+		private JoinServerPageViewModel _joinServerPagePageVM;
+		public Page JoinServerPage { get; set; }
+
 		public Page CurrentPage { get; set; }
 
 		public string DebugLog { get; set; }
@@ -44,16 +47,22 @@ namespace TopDownWpfClient.ViewModels {
 			_startPageVM = new StartPageViewModel();
 			_searchGamePageVM = new SearchGamePageViewModel();
 			_settingsPageVM = new SettingsPageViewModel();
+			_joinServerPagePageVM = new JoinServerPageViewModel();
 			_startPageVM.PlayEvent += SwitchPageToSearchGamePage;
 			_startPageVM.SettingsEvent += SwitchPageToSettingsPage;
 			_startPageVM.ExitEvent += KillApp;
 			_searchGamePageVM.BackEvent += SwitchPageToStartPage;
-			_searchGamePageVM.SearchGameEvent += SearchGame;
+			_searchGamePageVM.SearchGameEvent += SearchGame; 
+			_searchGamePageVM.JoinServerEvent += SwitchPageToJoinServerPage; 
 			_settingsPageVM.BackEvent += SwitchPageToStartPage;
+			_joinServerPagePageVM.BackEvent += SwitchPageToSearchGamePage;
+			_joinServerPagePageVM.JoinedServer += LaunchGame;
+			
 
 			StartPage = pageManager.CreatePage(_startPageVM);
 			SearchGamePage = pageManager.CreatePage(_searchGamePageVM);
 			SettingsPage = pageManager.CreatePage(_settingsPageVM);
+			JoinServerPage = pageManager.CreatePage(_joinServerPagePageVM);
 
 			CurrentPage = StartPage;
 			GUIEnabled = true;
@@ -70,6 +79,12 @@ namespace TopDownWpfClient.ViewModels {
 		private void SwitchPageToSettingsPage() {
 			CurrentPage = SettingsPage;
 		}
+
+		private void SwitchPageToJoinServerPage()
+		{
+			CurrentPage = JoinServerPage;
+		}
+
 
 		private void KillApp() {
 			Application.Current.Shutdown();
@@ -100,14 +115,45 @@ namespace TopDownWpfClient.ViewModels {
 											// Messages.ServerPort = "5000";
 											//Open game with acquired ServerAddress and ServerPort 
 				Status = "Server found!";
+				var mainWindow = StaticResolver.Resolve<IWindowManager>().GetView(this);
 				using (var game = new MainGame())
 				{
-					StaticResolver.Resolve<IWindowManager>().GetView(this).Visibility = Visibility.Collapsed;
+					mainWindow.Dispatcher.Invoke(() => {
+						mainWindow.Visibility = Visibility.Collapsed;
+					});
 					game.Run();
-					StaticResolver.Resolve<IWindowManager>().GetView(this).Visibility = Visibility.Visible;
+					mainWindow.Dispatcher.Invoke(() => {
+						mainWindow.Visibility = Visibility.Visible;
+						mainWindow.Focus();
+					});
 				}
 			}).ContinueWith((t) => {
 				Status = "";
+				GUIEnabled = true;
+			});
+		}
+
+		private void LaunchGame(object sender, (string, int) server)
+		{
+			GUIEnabled = false;
+			_ = Task.Run(() => {
+				//Get ServerAddress and ServerPort from TopDownMainServer
+
+				Messages.ServerAddress = server.Item1;
+				Messages.ServerPort = server.Item2;
+				var mainWindow = StaticResolver.Resolve<IWindowManager>().GetView(this);
+				using (var game = new MainGame())
+				{
+					mainWindow.Dispatcher.Invoke(() => {
+						mainWindow.Visibility = Visibility.Collapsed;
+					});
+					game.Run();
+					mainWindow.Dispatcher.Invoke(() => {
+						mainWindow.Visibility = Visibility.Visible;
+						mainWindow.Focus();
+					});
+				}
+			}).ContinueWith((t) => {
 				GUIEnabled = true;
 			});
 		}

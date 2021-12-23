@@ -13,11 +13,16 @@ namespace TopDownWpfClient.ViewModels {
 
 		public event Action BackEvent;
 
+		public ICommand JoinServerCommand { get; set; }
+
+		public event Action JoinServerEvent;
+
 		public MainWindowViewModel MainWindowViewModel => MainWindowViewModel.Instance;
 
 		public SearchGamePageViewModel() {
 			SearchGameCommand = new DelegateCommand<object>(_ => SearchGameEvent?.Invoke());
 			BackCommand = new DelegateCommand<object>(_ => BackEvent?.Invoke());
+			JoinServerCommand = new DelegateCommand<object>(_ => JoinServerEvent?.Invoke());
 		}
 	}
 }

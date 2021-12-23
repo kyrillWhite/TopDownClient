@@ -23,7 +23,7 @@
                 </Grid.ColumnDefinitions>
                 <GroupBox Header="Debug" FontSize="16" Visibility="{Binding DebugVisibility}">
                     <TextBox Height="150" Text="{Binding DebugLog}" 
-                             AcceptsReturn="True" FontSize="10" TextWrapping="Wrap" 
+                             AcceptsReturn="True" FontSize="10" TextWrapping="Wrap" IsReadOnly="True"
                              BorderThickness="0" behaviour:TextBoxBehaviour.ScrollOnTextChanged="True"
                              VerticalScrollBarVisibility="Hidden" />
                 </GroupBox>
