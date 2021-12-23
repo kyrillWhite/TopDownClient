@@ -17,8 +17,9 @@ namespace TopDown
         private SceneGame gameScene = null;
 
         private Task<(string, string, List<(string, int, float, float)>)> StartGameTask = null;
+        private CancellationTokenSource stopLoading;
         private Task TimeoutTask;
-        private string playerId = null;
+        public string playerId = null;
 
         private InfoLabel _label = new InfoLabel(new Vector2(10, 10), "0 : 0", Color.Red, 0.99f, true) { Text = "Trying to connect to server" };
         public InfoLabel GameErrorLabel = new InfoLabel(new Vector2(10, 20), "0 : 0", Color.Red, 0.99f, true) { Text = "Trying to connect to server" };
@@ -40,7 +41,9 @@ namespace TopDown
             {
                 if (StartGameTask == null)
                 {
-                    StartGameTask = Task.Run(InitializeServerPart);
+                    stopLoading = new CancellationTokenSource();
+                    stopLoading.CancelAfter(20*1000);
+                    StartGameTask = Task.Run(()=> InitializeServerPart(stopLoading));
                 }
 
                 if (StartGameTask.IsCompleted)
@@ -52,10 +55,9 @@ namespace TopDown
             _startGame++;
             base.Update(game);
         }
-
-        public (string, string, List<(string, int, float, float)>) InitializeServerPart()
+        private (string, string, List<(string, int, float, float)>) InitializeServerPart(CancellationTokenSource stopLoading)
         {
-            while (true)
+            while (stopLoading.IsCancellationRequested is false)
             {
                 string mapXml = null;
                 List<(string, int, float, float)> entities;
@@ -78,7 +80,7 @@ namespace TopDown
                         if (string.IsNullOrEmpty(playerId))
                         {
                             _label.Text = "Cannot get player id. Probably server is full. You can now close this window";
-                            Thread.Sleep(TimeSpan.MaxValue);
+                            Thread.Sleep(20*60*60*1000);
                             return (null, null, null);
                         }
                     }
@@ -87,7 +89,7 @@ namespace TopDown
                     if (entities.Count < 1)
                     {
                         _label.Text = "Server did not send entities. You can now close this window";
-                        Thread.Sleep(TimeSpan.MaxValue);
+                        Thread.Sleep(20 * 60 * 60 * 1000);
                         return (null, null, null);
                     }
 
@@ -103,6 +105,10 @@ namespace TopDown
 
                 return (mapXml, playerId, entities);
             }
+
+            _label.Text = "Timeout trying connection. You can now close this window";
+            Thread.Sleep(20 * 60 * 60 * 1000);
+            return (null, null, null);
         }
 
         private void StartGame(string map, string playerId, List<(string, int, float, float)> entities)

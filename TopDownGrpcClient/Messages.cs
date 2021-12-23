@@ -50,14 +50,9 @@ namespace TopDownGrpcClient
 
         public static void Close()
         {
-            //if (sendControllCall != null)
-            //{
-            //    sendControllCall.Dispose();
-            //}
-            if (_chanel != null)
-            {
-                _chanel.Dispose();
-            }
+            sendControllCall?.Dispose();
+            _chanel?.ShutdownAsync().Wait();
+            _chanel?.Dispose();
         }
 
         public static void SendControlState(Dictionary<int, Input> inputs, string playerId)
@@ -79,7 +74,18 @@ namespace TopDownGrpcClient
                         InputId = input.Key,
                         Id = playerId,
                     };
-                    sendControllCall.RequestStream.WriteAsync(controlStateReq);
+
+                    try
+                    {
+                        sendControllCall.RequestStream.WriteAsync(controlStateReq).Wait();
+                    }
+                    catch (AggregateException e)
+                    {
+                        if (e.InnerExceptions.OfType<RpcException>().All(x => x.StatusCode != StatusCode.OK))
+                        {
+                            throw e;
+                        }
+                    }
                     sendControllCall.ResponseStream.MoveNext();
                     var playerData = sendControllCall.ResponseStream.Current;
                     if (playerData != null)
@@ -100,7 +106,6 @@ namespace TopDownGrpcClient
             catch (Exception e)
             {
                 Exception = e;
-                Close();
             }
         }
 
@@ -109,68 +114,63 @@ namespace TopDownGrpcClient
             try
             {
                 using var retrieveControlCall = _client.RetrieveUpdate(new PlayerId() { Id = playerId });
+
+                if (!CanUpdate)
+                    CanUpdateToken.Token.WaitHandle.WaitOne();
+
                 await foreach (var message in retrieveControlCall.ResponseStream.ReadAllAsync())
                 {
-                    try
+                    RetrieveUpdateEvent?.Invoke(new RetrieveUpdateEventArgs()
                     {
-                        if (!CanUpdate)
-                            CanUpdateToken.Token.WaitHandle.WaitOne();
-
-                        RetrieveUpdateEvent?.Invoke(new RetrieveUpdateEventArgs()
+                        EntityPositions = message.Entities.Select(p => (p.Id, p.Team, p.Position.X, p.Position.Y, p.IsDead)).ToList(),
+                        Bullets = message.Bullets.Select(b => new BulletData()
                         {
-                            EntityPositions = message.Entities.Select(p => (p.Id, p.Team, p.Position.X, p.Position.Y, p.IsDead)).ToList(),
-                            Bullets = message.Bullets.Select(b => new BulletData()
-                            {
-                                CreationTime = b.CreationTime.ToDateTime().ToLocalTime(),
-                                StartPosX = b.StartPos.X,
-                                StartPosY = b.StartPos.Y,
-                                EndPosX = b.EndPos.X,
-                                EndPosY = b.EndPos.Y,
-                                Team = b.Team,
-                                Speed = b.Speed,
-                                Id = b.Id,
-                            }).ToList(),
-                            FirstTeamScore = message.RoundData.FirstTeamScore,
-                            SecondTeamScore = message.RoundData.SecondTeamScore,
-                            CurrentRound = message.RoundData.CurrentRound,
-                            IsEndGame = message.RoundData.IsEndGame,
-                            RoundTimeLeft = message.RoundData.RoundTimeLeft.ToTimeSpan(),
-                        });
-                    }
-                    catch (Exception e)
-                    {
-                        Exception = e;
-                        Close();
-                    }
+                            CreationTime = b.CreationTime.ToDateTime().ToLocalTime(),
+                            StartPosX = b.StartPos.X,
+                            StartPosY = b.StartPos.Y,
+                            EndPosX = b.EndPos.X,
+                            EndPosY = b.EndPos.Y,
+                            Team = b.Team,
+                            Speed = b.Speed,
+                            Id = b.Id,
+                        }).ToList(),
+                        FirstTeamScore = message.RoundData.FirstTeamScore,
+                        SecondTeamScore = message.RoundData.SecondTeamScore,
+                        CurrentRound = message.RoundData.CurrentRound,
+                        IsEndGame = message.RoundData.IsEndGame,
+                        RoundTimeLeft = message.RoundData.RoundTimeLeft.ToTimeSpan(),
+                    });
+
+                    if (message is { RoundData: { IsEndGame: true } })
+                        break;
                 }
             }
             catch (Exception e)
             {
                 Exception = e;
-                Close();
             }
         }
 
         public static string GetMap()
         {
-            var getMapCall = _client.GetMap(new Google.Protobuf.WellKnownTypes.Empty());
+            var getMapCall = _client.GetMap(new Google.Protobuf.WellKnownTypes.Empty(), null, DateTime.UtcNow.AddSeconds(20));
             return getMapCall.MapStr;
         }
 
         public static List<(string, int, float, float)> GetEntities(string playerId)
         {
-            var getMapCall = _client.GetEntities(new PlayerId() { Id = playerId });
+            var getMapCall = _client.GetEntities(new PlayerId() { Id = playerId }, null, DateTime.UtcNow.AddSeconds(20));
             return getMapCall.Entities.Select(p => (p.Id, p.Team, p.Position.X, p.Position.Y)).ToList();
         }
 
         public static string GetPlayerId()
         {
-            return _client.GetPlayerId(new Google.Protobuf.WellKnownTypes.Empty()).Id;
+            return _client.GetPlayerId(new Google.Protobuf.WellKnownTypes.Empty(), null, DateTime.UtcNow.AddSeconds(20)).Id;
         }
 
         public static void SendGun(string playerId, int type)
         {
-            _client.SendGunType(new GunType() { PlayerId = playerId, Type = type });
+            _client.SendGunType(new GunType() { PlayerId = playerId, Type = type }, null, DateTime.UtcNow.AddSeconds(20));
         }
     }
 }

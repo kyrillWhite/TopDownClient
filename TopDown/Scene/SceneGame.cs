@@ -29,6 +29,7 @@ namespace TopDown
         private bool _pause = false;
         private bool _startRound = true;
         private bool _exit = false;
+        private bool _endGame = false;
         private Dictionary<int, Input> _inputDict = new Dictionary<int, Input>();
         private int _inputId = 0;
         private int _lastSendedInputId = 0;
@@ -115,8 +116,7 @@ namespace TopDown
             else
             {
 
-
-                if (!_pause && !_startRound)
+                if (!_endGame && !_pause && !_startRound)
                 {
                     MoveControl();
                 }
@@ -251,12 +251,13 @@ namespace TopDown
         }
         private void UpdateRoundData(RetrieveUpdateEventArgs e)
         {
+            _score.Text = $"{e.FirstTeamScore} : {e.SecondTeamScore}";
             if (e.IsEndGame)
             {
                 FinalScore(e.FirstTeamScore, e.SecondTeamScore);
+                _endGame = true;
                 return;
             }
-            _score.Text = $"{e.FirstTeamScore} : {e.SecondTeamScore}";
             if (e.CurrentRound != _currentRound)
             {
                 // New round
@@ -292,22 +293,16 @@ namespace TopDown
                             Player entity = _players[entityPos.Item1];
                             if (entity != Player)
                             {
+                                lock (GameData.GameObjects)
+                                {
+                                    _players[entityPos.Item1].IsDead = entityPos.Item5;
+                                }
                                 if (entityPos.Item5)
                                 {
-                                    lock (GameData.GameObjects)
-                                    {
-                                        //GameData.GameObjects.Remove(_players[entityPos.Item1]);
-                                        //_players.Remove(entityPos.Item1);
-                                        _players[entityPos.Item1].IsDead = true;
-                                    }
                                     continue;
                                 }
                                 Positions[entityPos.Item1].Add((DateTime.Now, new Vector2(entityPos.Item3, entityPos.Item4)));
                                 Positions[entityPos.Item1].RemoveAll(p => (DateTime.Now - p.Item1).Seconds > 10);
-                            }
-                            else if (_startRound)
-                            {
-                                entity.Rectangle = entity.Rectangle + new Vector2(entityPos.Item3, entityPos.Item4) - entity.Rectangle.Min;
                             }
                         }
                     }
@@ -362,7 +357,11 @@ namespace TopDown
             lock (_inputDict)
             {
                 var deletedInputs = new List<int>();
-                foreach (var input in _inputDict.ToList().OrderBy(i => i.Key))
+                if (_inputDict.Count > 50)
+                {
+                    deletedInputs = _inputDict.OrderBy(i => i.Key).Skip(5).Select(x => x.Key).ToList();
+                }
+                foreach (var input in _inputDict.OrderBy(i => i.Key))
                 {
                     if (input.Key <= e.LastId)
                     {
@@ -594,7 +593,7 @@ namespace TopDown
 
             lock (Player)
             {
-                var mgPos = Control.GetMousePosition() + GameData.Camera;
+                var mgPos = Control.GetMousePosition() + GameData.Camera / GameData.Scale;
                 lock (_inputDict)
                 {
                     _inputDict.Add(_inputId, new Input()
@@ -691,6 +690,7 @@ namespace TopDown
         {
             Messages.RetrieveUpdateEvent -= ServerUpdate;
             Messages.PlayerDataEvent -= UpdatePlayerState;
+            Messages.Close();
 
             GameData.Clear();
             Positions.Clear();
@@ -700,6 +700,7 @@ namespace TopDown
             _game._scene = new SceneMenu();
             _game._scene.Initialize(_game);
             ((SceneMenu)_game._scene).GameErrorLabel.Text = err;
+            ((SceneMenu)_game._scene).playerId = _playerId;
         }
 
         private void Exit()
