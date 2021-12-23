@@ -281,15 +281,6 @@ namespace TopDown
 
         private void UpdateEntitiesPositions(RetrieveUpdateEventArgs e)
         {
-            foreach (var entityPos in e.EntityPositions)
-            {
-                if (!_players.ContainsKey(entityPos.Item1))
-                {
-                    Player entity = CreatePlayer(new Vector2(entityPos.Item3, entityPos.Item4), entityPos.Item2);
-                    _players.Add(entityPos.Item1, entity);
-                    Positions.Add(entityPos.Item1, new List<(DateTime, Vector2)>() { (DateTime.Now, entity.Rectangle.Min) });
-                }
-            }
             lock (Positions)
             {
                 lock (_players)
@@ -301,14 +292,12 @@ namespace TopDown
                             Player entity = _players[entityPos.Item1];
                             if (entity != Player)
                             {
+                                lock (GameData.GameObjects)
+                                {
+                                    _players[entityPos.Item1].IsDead = entityPos.Item5;
+                                }
                                 if (entityPos.Item5)
                                 {
-                                    lock (GameData.GameObjects)
-                                    {
-                                        //GameData.GameObjects.Remove(_players[entityPos.Item1]);
-                                        //_players.Remove(entityPos.Item1);
-                                        _players[entityPos.Item1].IsDead = true;
-                                    }
                                     continue;
                                 }
                                 Positions[entityPos.Item1].Add((DateTime.Now, new Vector2(entityPos.Item3, entityPos.Item4)));
