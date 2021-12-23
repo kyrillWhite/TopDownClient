@@ -304,10 +304,6 @@ namespace TopDown
                                 Positions[entityPos.Item1].Add((DateTime.Now, new Vector2(entityPos.Item3, entityPos.Item4)));
                                 Positions[entityPos.Item1].RemoveAll(p => (DateTime.Now - p.Item1).Seconds > 10);
                             }
-                            else if (_startRound)
-                            {
-                                entity.Rectangle = entity.Rectangle + new Vector2(entityPos.Item3, entityPos.Item4) - entity.Rectangle.Min;
-                            }
                         }
                     }
                 }
