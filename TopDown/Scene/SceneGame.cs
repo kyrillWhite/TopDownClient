@@ -35,6 +35,8 @@ namespace TopDown
         private int _lastSendedInputId = 0;
         private int _lastBulletId = 0;
         private int _currentRound = -1;
+        private Queue<PlayerDataEventArgs> queuePlayerDataArgs = new Queue<PlayerDataEventArgs>();
+        private Queue<RetrieveUpdateEventArgs> queueRetrieveUpdateArgs = new Queue<RetrieveUpdateEventArgs>();
 
         public Player Player { get => _player; set => _player = value; }
         public Map Map { get => _map; set => _map = value; }
@@ -158,52 +160,7 @@ namespace TopDown
                     cmPos.Y = cmPos.Y < -GameData.WindowSize.Y / 2 ? -GameData.WindowSize.Y / 2 : cmPos.Y;
                     GameData.Camera = Player.Rectangle.Center + cmPos * Constants.MaxCameraOffset;
                 }
-
-
-                // Server code: check team win round
-                //if (!_finalScore)
-                //{
-                //    var roundEnd = false;
-                //    if (!_players.Any(p => p.Value.Team == 2))
-                //    {
-                //        _rounds[0]++;
-                //        roundEnd = true;
-                //    }
-                //    if (!_players.Any(p => p.Value.Team == 1))
-                //    {
-                //        _rounds[1]++;
-                //        roundEnd = true;
-                //    }
-                //    if (_roundTime > Constants.RoundTime)
-                //    {
-                //        roundEnd = true;
-                //        var t1Count = _players.Where(p => p.Value.Team == 1).Count();
-                //        var t2Count = _players.Where(p => p.Value.Team == 2).Count();
-                //        if (t1Count != t2Count)
-                //        {
-                //            _rounds[t1Count > t2Count ? 0 : 1]++;
-                //        }
-                //    }
-                //    if (roundEnd)
-                //    {
-                //        _allRounds++;
-                //        _score.Text = $"{_rounds[0]} : {_rounds[1]}";
-                //        if (_allRounds < Constants.RoundsCount)
-                //        {
-                //            InitializeRound(false);
-                //        }
-                //        else
-                //        {
-                //            InitializeRound(true);
-                //            _pause = true;
-                //            _finalScore = true;
-                //            FinalScore();
-                //        }
-                //    }
-                //}
-
-                ////////////////////////
-                ///Send reinitialize command + new score
+                EventsArgsProcess();
             }
 
             ESCPress();
@@ -239,15 +196,40 @@ namespace TopDown
             InitializeRound(false);
         }
 
+        private void EventsArgsProcess()
+        {
+            while (queueRetrieveUpdateArgs.Count != 0)
+            {
+                RetrieveUpdateEventArgs e;
+                lock (queueRetrieveUpdateArgs)
+                {
+                    e = queueRetrieveUpdateArgs.Dequeue();
+                }
+                UpdateEntitiesPositions(e);
+                lock (_bullets)
+                {
+                    CreateBullets(e);
+                }
+                UpdateRoundData(e);
+            }
+
+            while (queuePlayerDataArgs.Count != 0)
+            {
+                PlayerDataEventArgs e;
+                lock (queuePlayerDataArgs)
+                {
+                    e = queuePlayerDataArgs.Dequeue();
+                }
+                UpdatePlayer(e);
+            }
+        }
+
         private void ServerUpdate(RetrieveUpdateEventArgs e)
         {
-            UpdateEntitiesPositions(e);
-            lock (_bullets)
+            lock (queueRetrieveUpdateArgs)
             {
-                CreateBullets(e);
+                queueRetrieveUpdateArgs.Enqueue(e);
             }
-            UpdateRoundData(e);
-
         }
         private void UpdateRoundData(RetrieveUpdateEventArgs e)
         {
@@ -260,7 +242,6 @@ namespace TopDown
             }
             if (e.CurrentRound != _currentRound)
             {
-                // New round
                 _currentRound++;
                 _startRound = true;
                 InitializeRound(false);
@@ -341,6 +322,14 @@ namespace TopDown
         }
 
         private void UpdatePlayerState(PlayerDataEventArgs e)
+        {
+            lock (queuePlayerDataArgs)
+            {
+                queuePlayerDataArgs.Enqueue(e);
+            }
+        }
+
+        private void UpdatePlayer(PlayerDataEventArgs e)
         {
             lock (Player)
             {
