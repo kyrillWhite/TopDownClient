@@ -52,11 +52,18 @@ namespace TopDownWpfClient.ViewModels {
 
 		private void SearchGame() {
 			//Get ServerAddress and ServerPort from TopDownMainServer
-			var server = GetServer();
-			
+			(string, int) server;
+			try {
+				server = GetServer();
+			} catch {
+				MessageBox.Show("Can't find server");
+				return;
+			}
+
 			Messages.ServerAddress = server.Item1;
 			// Messages.ServerAddress = "26.202.152.148";
 			Messages.ServerPort = server.Item2;
+			Messages.ServerPort = 5000; //TODO: доделать
 			// Messages.ServerPort = "5000";
 			//Open game with acquired ServerAddress and ServerPort 
 			using (var game = new MainGame()) {
@@ -68,26 +75,20 @@ namespace TopDownWpfClient.ViewModels {
 
 		
 
-        private (string, string) GetServer()
+        private (string, int) GetServer()
         {
             try
             {
 				var serviceClient = new MyServiceClient(MyServiceClient.EndpointConfiguration.BasicHttpBinding_IMyService);
-				var a = serviceClient.GetServerAddressAsync();
-                a.Wait();
-
-				string address = a.Result;
-
-				var b = serviceClient.GetServerPortAsync(true);
-				b.Wait();
-				string port = b.Result;
-
-                return (address, port);
+				var serverResult = serviceClient.GetAvailableServerAsync();
+				serverResult.Wait();
+				return serverResult.Result;
             }
             catch (Exception ex)
             {
 	            Console.WriteLine(ex);
 	            Console.WriteLine(ex.InnerException);
+	            MessageBox.Show(ex.Message);
                 client = null;
             }
 

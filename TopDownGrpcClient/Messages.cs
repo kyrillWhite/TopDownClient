@@ -21,7 +21,7 @@ namespace TopDownGrpcClient
         public static event RetrieveUpdateDelegate RetrieveUpdateEvent;
         public static event PlayerDataDelegate PlayerDataEvent;
         public static string ServerAddress;
-        public static string ServerPort;
+        public static int ServerPort;
 
         public static Exception Exception { get; set; } = null;
 
@@ -33,7 +33,7 @@ namespace TopDownGrpcClient
             Close();
 
             Exception = null;
-            if (string.IsNullOrEmpty(ServerPort)) 
+            if (ServerPort == 0) 
             {
 	            Exception = new Exception("No ServerPort");
                 return;

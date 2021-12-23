@@ -26,9 +26,9 @@
 
             <Border Grid.Column="1" Background="Beige" BorderThickness="1" BorderBrush="Black">
                 <StackPanel Margin="30 0" VerticalAlignment="Center">
-                    <Button Content="Search Game" Command="{Binding SearchGameCommand}" Margin="0 10"/>
+                    <Button Content="Search Game" FontSize="16" Command="{Binding SearchGameCommand}" Margin="0 10"/>
                     <!-- <Button Content="Settings" Margin="0 10"/> -->
-                    <Button Content="Back" Command="{Binding BackCommand}" Margin="0 10"/>
+                    <Button Content="Back" FontSize="16" Command="{Binding BackCommand}" Margin="0 10"/>
                 </StackPanel>
             </Border>
         </Grid>

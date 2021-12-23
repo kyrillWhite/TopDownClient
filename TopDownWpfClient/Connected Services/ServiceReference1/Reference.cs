@@ -16,11 +16,8 @@ namespace ServiceReference1
     public interface IMyService
     {
         
-        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IMyService/GetServerAddress", ReplyAction="http://tempuri.org/IMyService/GetServerAddressResponse")]
-        System.Threading.Tasks.Task<string> GetServerAddressAsync();
-        
-        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IMyService/GetServerPort", ReplyAction="http://tempuri.org/IMyService/GetServerPortResponse")]
-        System.Threading.Tasks.Task<string> GetServerPortAsync(bool isTCP);
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IMyService/GetAvailableServer", ReplyAction="http://tempuri.org/IMyService/GetAvailableServerResponse")]
+        System.Threading.Tasks.Task<System.ValueTuple<string, int>> GetAvailableServerAsync();
     }
     
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Tools.ServiceModel.Svcutil", "2.0.3-preview3.21351.2")]
@@ -73,14 +70,9 @@ namespace ServiceReference1
         {
         }
         
-        public System.Threading.Tasks.Task<string> GetServerAddressAsync()
+        public System.Threading.Tasks.Task<System.ValueTuple<string, int>> GetAvailableServerAsync()
         {
-            return base.Channel.GetServerAddressAsync();
-        }
-        
-        public System.Threading.Tasks.Task<string> GetServerPortAsync(bool isTCP)
-        {
-            return base.Channel.GetServerPortAsync(isTCP);
+            return base.Channel.GetAvailableServerAsync();
         }
         
         public virtual System.Threading.Tasks.Task OpenAsync()
