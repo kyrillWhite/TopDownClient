@@ -589,7 +589,7 @@ namespace TopDown
 
             lock (Player)
             {
-                var mgPos = Control.GetMousePosition() + GameData.Camera;
+                var mgPos = Control.GetMousePosition() + GameData.Camera / GameData.Scale;
                 lock (_inputDict)
                 {
                     _inputDict.Add(_inputId, new Input()
