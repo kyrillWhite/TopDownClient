@@ -18,7 +18,7 @@ namespace TopDown
 
         private Task<(string, string, List<(string, int, float, float)>)> StartGameTask = null;
         private Task TimeoutTask;
-        private string playerId = null;
+        public string playerId = null;
 
         private InfoLabel _label = new InfoLabel(new Vector2(10, 10), "0 : 0", Color.Red, 0.99f, true) { Text = "Trying to connect to server" };
         public InfoLabel GameErrorLabel = new InfoLabel(new Vector2(10, 20), "0 : 0", Color.Red, 0.99f, true) { Text = "Trying to connect to server" };

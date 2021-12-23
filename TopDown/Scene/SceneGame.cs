@@ -281,6 +281,15 @@ namespace TopDown
 
         private void UpdateEntitiesPositions(RetrieveUpdateEventArgs e)
         {
+            foreach (var entityPos in e.EntityPositions)
+            {
+                if (!_players.ContainsKey(entityPos.Item1))
+                {
+                    Player entity = CreatePlayer(new Vector2(entityPos.Item3, entityPos.Item4), entityPos.Item2);
+                    _players.Add(entityPos.Item1, entity);
+                    Positions.Add(entityPos.Item1, new List<(DateTime, Vector2)>() { (DateTime.Now, entity.Rectangle.Min) });
+                }
+            }
             lock (Positions)
             {
                 lock (_players)
@@ -700,6 +709,7 @@ namespace TopDown
             _game._scene = new SceneMenu();
             _game._scene.Initialize(_game);
             ((SceneMenu)_game._scene).GameErrorLabel.Text = err;
+            ((SceneMenu)_game._scene).playerId = _playerId;
         }
 
         private void Exit()
