@@ -15,10 +15,15 @@ namespace TopDownWpfClient.ViewModels {
 
 		public event Action ExitEvent;
 
+		public ICommand SettingsCommand { get; set; }
+
+		public event Action SettingsEvent;
+
 		public StartPageViewModel() {
 			// PlayCommand = new DelegateCommand<object>(_ => Play());
 			PlayCommand = new DelegateCommand<object>(_ => PlayEvent?.Invoke());
 			ExitCommand = new DelegateCommand<object>(_ => ExitEvent?.Invoke());
+			SettingsCommand = new DelegateCommand<object>(_ => SettingsEvent?.Invoke());
 		}
 	}
 }

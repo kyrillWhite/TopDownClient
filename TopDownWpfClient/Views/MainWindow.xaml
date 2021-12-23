@@ -6,12 +6,30 @@
         xmlns:local="clr-namespace:TopDownWpfClient"
         xmlns:views="clr-namespace:TopDownWpfClient.Views"
         xmlns:viewModels="clr-namespace:TopDownWpfClient.ViewModels"
+        xmlns:behaviour="clr-namespace:TopDownWpfClient.Behaviour"
         WindowStartupLocation="CenterScreen"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=viewModels:MainWindowViewModel}"
         Title="TopDown" Height="450" Width="800" 
         >
     <Grid>
+        <StackPanel>
+            <!-- <TextBlock Text="Debug" FontSize="16"/> -->
+            
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="3*"/>
+                </Grid.ColumnDefinitions>
+                <GroupBox Header="Debug" FontSize="16" Visibility="{Binding DebugVisibility}">
+                    <TextBox Height="150" Text="{Binding DebugLog}" 
+                             AcceptsReturn="True" FontSize="10" TextWrapping="Wrap" 
+                             BorderThickness="0" behaviour:TextBoxBehaviour.ScrollOnTextChanged="True"
+                             VerticalScrollBarVisibility="Hidden" />
+                </GroupBox>
+              
+            </Grid>
+        </StackPanel>
         <Frame NavigationUIVisibility="Hidden" Content="{Binding CurrentPage}" />
     </Grid>
 </Window>

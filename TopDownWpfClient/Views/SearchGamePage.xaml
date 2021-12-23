@@ -17,6 +17,10 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
+        <StackPanel Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock Text="{Binding MainWindowViewModel.Status}" FontSize="16"/>
+        </StackPanel>
+        
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
@@ -26,9 +30,9 @@
 
             <Border Grid.Column="1" Background="Beige" BorderThickness="1" BorderBrush="Black">
                 <StackPanel Margin="30 0" VerticalAlignment="Center">
-                    <Button Content="Search Game" FontSize="16" Command="{Binding SearchGameCommand}" Margin="0 10"/>
+                    <Button Content="Search Game" IsEnabled="{Binding MainWindowViewModel.GUIEnabled}" FontSize="16" Command="{Binding SearchGameCommand}" Margin="0 10"/>
                     <!-- <Button Content="Settings" Margin="0 10"/> -->
-                    <Button Content="Back" FontSize="16" Command="{Binding BackCommand}" Margin="0 10"/>
+                    <Button Content="Back" FontSize="16" IsEnabled="{Binding MainWindowViewModel.GUIEnabled}" Command="{Binding BackCommand}" Margin="0 10"/>
                 </StackPanel>
             </Border>
         </Grid>
