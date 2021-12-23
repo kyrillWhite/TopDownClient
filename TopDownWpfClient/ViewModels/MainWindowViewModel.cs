@@ -128,6 +128,7 @@ namespace TopDownWpfClient.ViewModels {
 					mainWindow.Dispatcher.Invoke(() => {
 						mainWindow.Visibility = Visibility.Collapsed;
 					});
+					game.Scale = WindowScale;
 					game.Run();
 					mainWindow.Dispatcher.Invoke(() => {
 						mainWindow.Visibility = Visibility.Visible;
