@@ -109,6 +109,8 @@ namespace TopDown
                     File.AppendAllText("log.txt", Messages.Exception.Message);
                 }
                 _infoLabel.Text = "Connection error. See log.txt";
+
+                CloseWithError("Connection error. See log.txt");
             }
             else
             {
@@ -208,7 +210,6 @@ namespace TopDown
 
             base.Update(game);
         }
-
         private void InitializeRound(bool onlyClear)
         {
             Player = _players[_playerId];
@@ -685,6 +686,21 @@ namespace TopDown
             UiObjects["button_exit"].Visible = false;
             _pause = false;
         }
+
+        private void CloseWithError(string err)
+        {
+            Messages.RetrieveUpdateEvent -= ServerUpdate;
+            Messages.PlayerDataEvent -= UpdatePlayerState;
+
+            GameData.Clear();
+            Positions.Clear();
+            _players.Clear();
+            _bullets.Clear();
+            _inputDict.Clear();
+            _game._scene = new SceneMenu();
+            _game._scene.Initialize(_game);
+        }
+
         private void Exit()
         {
             GameData.Clear();
