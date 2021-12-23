@@ -33,15 +33,15 @@ namespace TopDownGrpcClient
             Close();
 
             Exception = null;
-            if (ServerPort == 0) 
+            if (ServerPort == 0)
             {
-	            Exception = new Exception("No ServerPort");
+                Exception = new Exception("No ServerPort");
                 return;
             }
             if (string.IsNullOrEmpty(ServerAddress))
             {
-	            Exception = new Exception("No ServerAddress");
-	            return;
+                Exception = new Exception("No ServerAddress");
+                return;
             }
             _chanel = GrpcChannel.ForAddress($"http://{ServerAddress}:{ServerPort}");
             _client = new TopDownServer.TopDownServerClient(_chanel);
@@ -104,11 +104,11 @@ namespace TopDownGrpcClient
             }
         }
 
-        public static async Task GetUpdate()
+        public static async Task GetUpdate(string playerId)
         {
             try
             {
-                using var retrieveControlCall = _client.RetrieveUpdate(new Google.Protobuf.WellKnownTypes.Empty());
+                using var retrieveControlCall = _client.RetrieveUpdate(new PlayerId() { Id = playerId });
                 await foreach (var message in retrieveControlCall.ResponseStream.ReadAllAsync())
                 {
                     try
@@ -157,9 +157,9 @@ namespace TopDownGrpcClient
             return getMapCall.MapStr;
         }
 
-        public static List<(string, int, float, float)> GetEntities()
+        public static List<(string, int, float, float)> GetEntities(string playerId)
         {
-            var getMapCall = _client.GetEntities(new Google.Protobuf.WellKnownTypes.Empty());
+            var getMapCall = _client.GetEntities(new PlayerId() { Id = playerId });
             return getMapCall.Entities.Select(p => (p.Id, p.Team, p.Position.X, p.Position.Y)).ToList();
         }
 

@@ -103,7 +103,7 @@ namespace ServiceReference1
         {
             if ((endpointConfiguration == EndpointConfiguration.BasicHttpBinding_IMyService))
             {
-                return new System.ServiceModel.EndpointAddress("http://26.101.252.249:5003/MyService/basic");
+                return new System.ServiceModel.EndpointAddress("http://26.104.61.15:5003/MyService/basic");
             }
             throw new System.InvalidOperationException(string.Format("Could not find endpoint with name \'{0}\'.", endpointConfiguration));
         }

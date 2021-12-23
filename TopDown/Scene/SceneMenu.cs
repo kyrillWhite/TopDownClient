@@ -18,8 +18,10 @@ namespace TopDown
 
         private Task<(string, string, List<(string, int, float, float)>)> StartGameTask = null;
         private Task TimeoutTask;
+        private string playerId = null;
 
-        private InfoLabel _label = new InfoLabel(new Vector2(10, 10), "0 : 0", Color.Black, 0.99f, true) { Text = "Trying to connect to server" };
+        private InfoLabel _label = new InfoLabel(new Vector2(10, 10), "0 : 0", Color.Red, 0.99f, true) { Text = "Trying to connect to server" };
+        public InfoLabel GameErrorLabel = new InfoLabel(new Vector2(10, 20), "0 : 0", Color.Red, 0.99f, true) { Text = "Trying to connect to server" };
 
         public override void Initialize(MainGame game)
         {
@@ -28,6 +30,7 @@ namespace TopDown
 
             UiObjects["button_cancel"].isPressed += game.Exit;
             UiObjects["button_cancel"].isHovered += SetHandCursor;
+            GameErrorLabel.Text = "";
             base.Initialize(game);
         }
 
@@ -54,7 +57,7 @@ namespace TopDown
         {
             while (true)
             {
-                string mapXml = null, playerId = null;
+                string mapXml = null;
                 List<(string, int, float, float)> entities;
                 try
                 {
@@ -67,15 +70,20 @@ namespace TopDown
                         Thread.Sleep(3000);
                         continue;
                     }
-                    playerId = Messages.GetPlayerId();
+
+
                     if (string.IsNullOrEmpty(playerId))
                     {
-                        _label.Text = "Cannot get player id. Probably server is full. You can now close this window";
-                        Thread.Sleep(TimeSpan.MaxValue);
-                        return (null, null, null);
+                        playerId = Messages.GetPlayerId();
+                        if (string.IsNullOrEmpty(playerId))
+                        {
+                            _label.Text = "Cannot get player id. Probably server is full. You can now close this window";
+                            Thread.Sleep(TimeSpan.MaxValue);
+                            return (null, null, null);
+                        }
                     }
 
-                    entities = Messages.GetEntities();
+                    entities = Messages.GetEntities(playerId);
                     if (entities.Count < 1)
                     {
                         _label.Text = "Server did not send entities. You can now close this window";
@@ -83,12 +91,12 @@ namespace TopDown
                         return (null, null, null);
                     }
 
-                    Task.Run(Messages.GetUpdate);
+                    Task.Run(() => Messages.GetUpdate(playerId));
                 }
                 catch (Exception e)
                 {
                     _label.Text = $"Error in connecting to server. See log.txt fro more detail. Trying again";
-                    File.AppendAllText("log.txt", e.ToString());
+                    File.AppendAllText("log.txt", $"{DateTime.Now.ToString()}\n{e.ToString()}\n\n");
                     Thread.Sleep(3000);
                     continue;
                 }
