@@ -27,7 +27,7 @@
             <Border Grid.Column="1" Background="Beige" BorderThickness="1" BorderBrush="Black">
                 <StackPanel Margin="30 0" VerticalAlignment="Center">
                     <Button Content="Play" FontSize="16" Command="{Binding PlayCommand}" Margin="0 10"/>
-                    <!-- <Button Content="Settings" Margin="0 10"/> -->
+                    <Button Content="Settings" FontSize="16" Command="{Binding SettingsCommand}" Margin="0 10"/>
                     <Button Content="Exit" FontSize="16" Command="{Binding ExitCommand}" Margin="0 10"/>
                 </StackPanel>
             </Border>

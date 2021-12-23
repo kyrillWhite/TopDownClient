@@ -1,22 +1,17 @@
 ﻿using System;
-using System.Windows.Controls;
 using System.Windows.Input;
 using TopDownWpfClient.Models;
 
 namespace TopDownWpfClient.ViewModels {
-	public class SearchGamePageViewModel : BaseViewModel {
-		public ICommand SearchGameCommand { get; set; }
-
-		public event Action SearchGameEvent;
-
+	public class SettingsPageViewModel : BaseViewModel {
 		public ICommand BackCommand { get; set; }
 
 		public event Action BackEvent;
 
 		public MainWindowViewModel MainWindowViewModel => MainWindowViewModel.Instance;
 
-		public SearchGamePageViewModel() {
-			SearchGameCommand = new DelegateCommand<object>(_ => SearchGameEvent?.Invoke());
+		public SettingsPageViewModel()
+		{
 			BackCommand = new DelegateCommand<object>(_ => BackEvent?.Invoke());
 		}
 	}
