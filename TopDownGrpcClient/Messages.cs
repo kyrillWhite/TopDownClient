@@ -45,19 +45,14 @@ namespace TopDownGrpcClient
             }
             _chanel = GrpcChannel.ForAddress($"http://{ServerAddress}:{ServerPort}");
             _client = new TopDownServer.TopDownServerClient(_chanel);
-            sendControllCall = _client.UpdateUserState();
+            sendControllCall = _client.UpdateUserState(null, DateTime.UtcNow.AddSeconds(30));
         }
 
         public static void Close()
         {
-            //if (sendControllCall != null)
-            //{
-            //    sendControllCall.Dispose();
-            //}
-            if (_chanel != null)
-            {
-                _chanel.Dispose();
-            }
+            sendControllCall?.Dispose();
+            _chanel?.ShutdownAsync().Wait();
+            _chanel?.Dispose();
         }
 
         public static void SendControlState(Dictionary<int, Input> inputs, string playerId)
@@ -108,7 +103,7 @@ namespace TopDownGrpcClient
         {
             try
             {
-                using var retrieveControlCall = _client.RetrieveUpdate(new PlayerId() { Id = playerId });
+                using var retrieveControlCall = _client.RetrieveUpdate(new PlayerId() { Id = playerId }, null, DateTime.UtcNow.AddSeconds(30));
                 await foreach (var message in retrieveControlCall.ResponseStream.ReadAllAsync())
                 {
                     try
@@ -153,24 +148,24 @@ namespace TopDownGrpcClient
 
         public static string GetMap()
         {
-            var getMapCall = _client.GetMap(new Google.Protobuf.WellKnownTypes.Empty());
+            var getMapCall = _client.GetMap(new Google.Protobuf.WellKnownTypes.Empty(), null, DateTime.UtcNow.AddSeconds(20));
             return getMapCall.MapStr;
         }
 
         public static List<(string, int, float, float)> GetEntities(string playerId)
         {
-            var getMapCall = _client.GetEntities(new PlayerId() { Id = playerId });
+            var getMapCall = _client.GetEntities(new PlayerId() { Id = playerId }, null, DateTime.UtcNow.AddSeconds(20));
             return getMapCall.Entities.Select(p => (p.Id, p.Team, p.Position.X, p.Position.Y)).ToList();
         }
 
         public static string GetPlayerId()
         {
-            return _client.GetPlayerId(new Google.Protobuf.WellKnownTypes.Empty()).Id;
+            return _client.GetPlayerId(new Google.Protobuf.WellKnownTypes.Empty(), null, DateTime.UtcNow.AddSeconds(20)).Id;
         }
 
         public static void SendGun(string playerId, int type)
         {
-            _client.SendGunType(new GunType() { PlayerId = playerId, Type = type });
+            _client.SendGunType(new GunType() { PlayerId = playerId, Type = type }, null, DateTime.UtcNow.AddSeconds(20));
         }
     }
 }
