@@ -357,7 +357,11 @@ namespace TopDown
             lock (_inputDict)
             {
                 var deletedInputs = new List<int>();
-                foreach (var input in _inputDict.ToList().OrderBy(i => i.Key))
+                if (_inputDict.Count > 50)
+                {
+                    deletedInputs = _inputDict.OrderBy(i => i.Key).Skip(5).Select(x => x.Key).ToList();
+                }
+                foreach (var input in _inputDict.OrderBy(i => i.Key))
                 {
                     if (input.Key <= e.LastId)
                     {
@@ -686,6 +690,7 @@ namespace TopDown
         {
             Messages.RetrieveUpdateEvent -= ServerUpdate;
             Messages.PlayerDataEvent -= UpdatePlayerState;
+            Messages.Close();
 
             GameData.Clear();
             Positions.Clear();
