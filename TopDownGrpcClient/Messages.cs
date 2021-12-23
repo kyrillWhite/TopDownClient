@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,6 +20,8 @@ namespace TopDownGrpcClient
         public delegate void PlayerDataDelegate(PlayerDataEventArgs e);
         public static event RetrieveUpdateDelegate RetrieveUpdateEvent;
         public static event PlayerDataDelegate PlayerDataEvent;
+        public static string ServerAddress;
+        public static int ServerPort;
 
         public static Exception Exception { get; set; } = null;
 
@@ -31,8 +33,17 @@ namespace TopDownGrpcClient
             Close();
 
             Exception = null;
-
-            _chanel = GrpcChannel.ForAddress("http://26.104.61.15:5000");
+            if (ServerPort == 0) 
+            {
+	            Exception = new Exception("No ServerPort");
+                return;
+            }
+            if (string.IsNullOrEmpty(ServerAddress))
+            {
+	            Exception = new Exception("No ServerAddress");
+	            return;
+            }
+            _chanel = GrpcChannel.ForAddress($"http://{ServerAddress}:{ServerPort}");
             _client = new TopDownServer.TopDownServerClient(_chanel);
             sendControllCall = _client.UpdateUserState();
         }

@@ -7,7 +7,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TopDown", "TopDown\TopDown.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TopDownGrpcClient", "TopDownGrpcClient\TopDownGrpcClient.csproj", "{2D50CDD2-E037-4C59-B53C-E30237D8C8A6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TopDownLibrary", "TopDownLibrary\TopDownLibrary.csproj", "{E4B9F1C7-8930-4F76-BE92-27D7AD90505F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TopDownLibrary", "TopDownLibrary\TopDownLibrary.csproj", "{E4B9F1C7-8930-4F76-BE92-27D7AD90505F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TopDownWpfClient", "TopDownWpfClient\TopDownWpfClient.csproj", "{7934ACB3-9F27-4089-AB7F-D4EFC01226B7}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{648DFC8B-4770-4308-88E2-54220CC516C5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,6 +31,10 @@ Global
 		{E4B9F1C7-8930-4F76-BE92-27D7AD90505F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E4B9F1C7-8930-4F76-BE92-27D7AD90505F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E4B9F1C7-8930-4F76-BE92-27D7AD90505F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7934ACB3-9F27-4089-AB7F-D4EFC01226B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7934ACB3-9F27-4089-AB7F-D4EFC01226B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7934ACB3-9F27-4089-AB7F-D4EFC01226B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7934ACB3-9F27-4089-AB7F-D4EFC01226B7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

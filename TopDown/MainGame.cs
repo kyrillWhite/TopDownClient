@@ -27,6 +27,7 @@ namespace TopDown
             GameData.Initialize(Content);
             _scene = new SceneMenu();
             _scene.Initialize(this);
+            Exiting += (e1, e2) => { GameData.Clear(); };
             base.Initialize();
         }
 
