@@ -41,7 +41,10 @@ namespace TopDownWpfClient.ViewModels {
 
 		public static MainWindowViewModel Instance { get; set; }
 
+		private MainGame _game;
+
 		public MainWindowViewModel() {
+			// _game = new MainGame();
 			Instance = this;
 			var pageManager = StaticResolver.Resolve<IPageManager>();
 			_startPageVM = new StartPageViewModel();
@@ -103,19 +106,12 @@ namespace TopDownWpfClient.ViewModels {
 				}
 				catch (Exception e)
 				{
-					DebugLog += "\n" + e.Message;
-					// DebugLog += e.InnerException?.Message;
 					Status = "Error!";
 					return;
 				}
 
 				Messages.ServerAddress = server.Item1;
-				// Messages.ServerAddress = "26.202.152.148";
 				Messages.ServerPort = server.Item2;
-				// Messages.ServerPort = 5000; //TODO: доделать
-											// Messages.ServerPort = "5000";
-											//Open game with acquired ServerAddress and ServerPort 
-
 				if (string.IsNullOrEmpty(Messages.ServerAddress) || Messages.ServerPort < 0) {
 					Status = "Server didn't give correct ServerAddress or ServerPort";
 					return;
@@ -123,18 +119,15 @@ namespace TopDownWpfClient.ViewModels {
 
 				Status = "Server found!";
 				var mainWindow = StaticResolver.Resolve<IWindowManager>().GetView(this);
-				using (var game = new MainGame())
-				{
-					mainWindow.Dispatcher.Invoke(() => {
-						mainWindow.Visibility = Visibility.Collapsed;
-					});
-					game.Scale = WindowScale;
-					game.Run();
-					mainWindow.Dispatcher.Invoke(() => {
-						mainWindow.Visibility = Visibility.Visible;
-						mainWindow.Focus();
-					});
-				}
+				mainWindow.Dispatcher.Invoke(() => {
+					mainWindow.Visibility = Visibility.Collapsed;
+					_game = new MainGame();
+					_game.Scale = WindowScale;
+					_game.Run();
+					_game.Dispose();
+					mainWindow.Visibility = Visibility.Visible;
+					mainWindow.Focus();
+				});
 			}).ContinueWith((t) => {
 				GUIEnabled = true;
 			});
@@ -145,22 +138,18 @@ namespace TopDownWpfClient.ViewModels {
 			GUIEnabled = false;
 			_ = Task.Run(() => {
 				//Get ServerAddress and ServerPort from TopDownMainServer
-
 				Messages.ServerAddress = server.Item1;
 				Messages.ServerPort = server.Item2;
 				var mainWindow = StaticResolver.Resolve<IWindowManager>().GetView(this);
-				using (var game = new MainGame())
-				{
-					mainWindow.Dispatcher.Invoke(() => {
-						mainWindow.Visibility = Visibility.Collapsed;
-					});
-					game.Scale = WindowScale;
-					game.Run();
-					mainWindow.Dispatcher.Invoke(() => {
-						mainWindow.Visibility = Visibility.Visible;
-						mainWindow.Focus();
-					});
-				}
+				mainWindow.Dispatcher.Invoke(() => {
+					mainWindow.Visibility = Visibility.Collapsed;
+					_game = new MainGame();
+					_game.Scale = WindowScale;
+					_game.Run();
+					_game.Dispose();
+					mainWindow.Visibility = Visibility.Visible;
+					mainWindow.Focus();
+				});
 			}).ContinueWith((t) => {
 				GUIEnabled = true;
 			});
