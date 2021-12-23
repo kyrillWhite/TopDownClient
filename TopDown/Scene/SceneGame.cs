@@ -251,12 +251,12 @@ namespace TopDown
         }
         private void UpdateRoundData(RetrieveUpdateEventArgs e)
         {
+            _score.Text = $"{e.FirstTeamScore} : {e.SecondTeamScore}";
             if (e.IsEndGame)
             {
                 FinalScore(e.FirstTeamScore, e.SecondTeamScore);
                 return;
             }
-            _score.Text = $"{e.FirstTeamScore} : {e.SecondTeamScore}";
             if (e.CurrentRound != _currentRound)
             {
                 // New round
