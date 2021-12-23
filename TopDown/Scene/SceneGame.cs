@@ -106,7 +106,7 @@ namespace TopDown
             {
                 if (string.IsNullOrEmpty(_infoLabel.Text))
                 {
-                    File.AppendAllText("log.txt", Messages.Exception.Message);
+                    File.AppendAllText("log.txt", $"{DateTime.Now.ToString()}\n{Messages.Exception.Message}\n\n");
                 }
                 _infoLabel.Text = "Connection error. See log.txt";
 
@@ -699,6 +699,7 @@ namespace TopDown
             _inputDict.Clear();
             _game._scene = new SceneMenu();
             _game._scene.Initialize(_game);
+            ((SceneMenu)_game._scene).GameErrorLabel.Text = err;
         }
 
         private void Exit()
