@@ -29,6 +29,7 @@ namespace TopDown
         private bool _pause = false;
         private bool _startRound = true;
         private bool _exit = false;
+        private bool _endGame = false;
         private Dictionary<int, Input> _inputDict = new Dictionary<int, Input>();
         private int _inputId = 0;
         private int _lastSendedInputId = 0;
@@ -115,8 +116,7 @@ namespace TopDown
             else
             {
 
-
-                if (!_pause && !_startRound)
+                if (!_endGame && !_pause && !_startRound)
                 {
                     MoveControl();
                 }
@@ -255,6 +255,7 @@ namespace TopDown
             if (e.IsEndGame)
             {
                 FinalScore(e.FirstTeamScore, e.SecondTeamScore);
+                _endGame = true;
                 return;
             }
             if (e.CurrentRound != _currentRound)
