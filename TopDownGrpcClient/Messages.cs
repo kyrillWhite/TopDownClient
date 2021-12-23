@@ -45,7 +45,7 @@ namespace TopDownGrpcClient
             }
             _chanel = GrpcChannel.ForAddress($"http://{ServerAddress}:{ServerPort}");
             _client = new TopDownServer.TopDownServerClient(_chanel);
-            sendControllCall = _client.UpdateUserState(null, DateTime.UtcNow.AddSeconds(30));
+            sendControllCall = _client.UpdateUserState();
         }
 
         public static void Close()
@@ -74,7 +74,18 @@ namespace TopDownGrpcClient
                         InputId = input.Key,
                         Id = playerId,
                     };
-                    sendControllCall.RequestStream.WriteAsync(controlStateReq);
+
+                    try
+                    {
+                        sendControllCall.RequestStream.WriteAsync(controlStateReq).Wait();
+                    }
+                    catch (AggregateException e)
+                    {
+                        if (e.InnerExceptions.OfType<RpcException>().All(x => x.StatusCode != StatusCode.OK))
+                        {
+                            throw e;
+                        }
+                    }
                     sendControllCall.ResponseStream.MoveNext();
                     var playerData = sendControllCall.ResponseStream.Current;
                     if (playerData != null)
@@ -95,7 +106,6 @@ namespace TopDownGrpcClient
             catch (Exception e)
             {
                 Exception = e;
-                Close();
             }
         }
 
@@ -103,46 +113,41 @@ namespace TopDownGrpcClient
         {
             try
             {
-                using var retrieveControlCall = _client.RetrieveUpdate(new PlayerId() { Id = playerId }, null, DateTime.UtcNow.AddSeconds(30));
+                using var retrieveControlCall = _client.RetrieveUpdate(new PlayerId() { Id = playerId });
+
+                if (!CanUpdate)
+                    CanUpdateToken.Token.WaitHandle.WaitOne();
+
                 await foreach (var message in retrieveControlCall.ResponseStream.ReadAllAsync())
                 {
-                    try
+                    RetrieveUpdateEvent?.Invoke(new RetrieveUpdateEventArgs()
                     {
-                        if (!CanUpdate)
-                            CanUpdateToken.Token.WaitHandle.WaitOne();
-
-                        RetrieveUpdateEvent?.Invoke(new RetrieveUpdateEventArgs()
+                        EntityPositions = message.Entities.Select(p => (p.Id, p.Team, p.Position.X, p.Position.Y, p.IsDead)).ToList(),
+                        Bullets = message.Bullets.Select(b => new BulletData()
                         {
-                            EntityPositions = message.Entities.Select(p => (p.Id, p.Team, p.Position.X, p.Position.Y, p.IsDead)).ToList(),
-                            Bullets = message.Bullets.Select(b => new BulletData()
-                            {
-                                CreationTime = b.CreationTime.ToDateTime().ToLocalTime(),
-                                StartPosX = b.StartPos.X,
-                                StartPosY = b.StartPos.Y,
-                                EndPosX = b.EndPos.X,
-                                EndPosY = b.EndPos.Y,
-                                Team = b.Team,
-                                Speed = b.Speed,
-                                Id = b.Id,
-                            }).ToList(),
-                            FirstTeamScore = message.RoundData.FirstTeamScore,
-                            SecondTeamScore = message.RoundData.SecondTeamScore,
-                            CurrentRound = message.RoundData.CurrentRound,
-                            IsEndGame = message.RoundData.IsEndGame,
-                            RoundTimeLeft = message.RoundData.RoundTimeLeft.ToTimeSpan(),
-                        });
-                    }
-                    catch (Exception e)
-                    {
-                        Exception = e;
-                        Close();
-                    }
+                            CreationTime = b.CreationTime.ToDateTime().ToLocalTime(),
+                            StartPosX = b.StartPos.X,
+                            StartPosY = b.StartPos.Y,
+                            EndPosX = b.EndPos.X,
+                            EndPosY = b.EndPos.Y,
+                            Team = b.Team,
+                            Speed = b.Speed,
+                            Id = b.Id,
+                        }).ToList(),
+                        FirstTeamScore = message.RoundData.FirstTeamScore,
+                        SecondTeamScore = message.RoundData.SecondTeamScore,
+                        CurrentRound = message.RoundData.CurrentRound,
+                        IsEndGame = message.RoundData.IsEndGame,
+                        RoundTimeLeft = message.RoundData.RoundTimeLeft.ToTimeSpan(),
+                    });
+
+                    if (message is { RoundData: { IsEndGame: true } })
+                        break;
                 }
             }
             catch (Exception e)
             {
                 Exception = e;
-                Close();
             }
         }
 
