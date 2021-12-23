@@ -10,6 +10,7 @@ namespace TopDown
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
         public Scene _scene;
+        public double Scale { get; set; } = 1;
 
         public MainGame()
         {
@@ -20,6 +21,7 @@ namespace TopDown
 
         protected override void Initialize()
         {
+            GameData.Scale = (float)Scale;
             _graphics.PreferredBackBufferWidth = (int)(1280 * GameData.Scale);
             _graphics.PreferredBackBufferHeight = (int)(720 * GameData.Scale);
             _graphics.ApplyChanges();

@@ -37,7 +37,7 @@ namespace TopDownWpfClient.ViewModels {
 
 		public string Status { get; set; }
 
-		public double WindowScale { get; set; }
+		public double WindowScale { get; set; } = 1;
 
 		public static MainWindowViewModel Instance { get; set; }
 
@@ -92,6 +92,7 @@ namespace TopDownWpfClient.ViewModels {
 
 		private void SearchGame() {
 			GUIEnabled = false;
+			Status = "";
 			_ = Task.Run(() => {
 				//Get ServerAddress and ServerPort from TopDownMainServer
 				Status = "Searching server...";
@@ -114,6 +115,12 @@ namespace TopDownWpfClient.ViewModels {
 				// Messages.ServerPort = 5000; //TODO: доделать
 											// Messages.ServerPort = "5000";
 											//Open game with acquired ServerAddress and ServerPort 
+
+				if (string.IsNullOrEmpty(Messages.ServerAddress) || Messages.ServerPort < 0) {
+					Status = "Server didn't give correct ServerAddress or ServerPort";
+					return;
+				}
+
 				Status = "Server found!";
 				var mainWindow = StaticResolver.Resolve<IWindowManager>().GetView(this);
 				using (var game = new MainGame())
@@ -121,6 +128,7 @@ namespace TopDownWpfClient.ViewModels {
 					mainWindow.Dispatcher.Invoke(() => {
 						mainWindow.Visibility = Visibility.Collapsed;
 					});
+					game.Scale = WindowScale;
 					game.Run();
 					mainWindow.Dispatcher.Invoke(() => {
 						mainWindow.Visibility = Visibility.Visible;
@@ -128,7 +136,6 @@ namespace TopDownWpfClient.ViewModels {
 					});
 				}
 			}).ContinueWith((t) => {
-				Status = "";
 				GUIEnabled = true;
 			});
 		}
@@ -147,6 +154,7 @@ namespace TopDownWpfClient.ViewModels {
 					mainWindow.Dispatcher.Invoke(() => {
 						mainWindow.Visibility = Visibility.Collapsed;
 					});
+					game.Scale = WindowScale;
 					game.Run();
 					mainWindow.Dispatcher.Invoke(() => {
 						mainWindow.Visibility = Visibility.Visible;
