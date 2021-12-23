@@ -704,6 +704,14 @@ namespace TopDown
 
         private void Exit()
         {
+            Messages.RetrieveUpdateEvent -= ServerUpdate;
+            Messages.PlayerDataEvent -= UpdatePlayerState;
+
+            GameData.Clear();
+            Positions.Clear();
+            _players.Clear();
+            _bullets.Clear();
+            _inputDict.Clear();
             GameData.Clear();
             _exit = true;
         }
