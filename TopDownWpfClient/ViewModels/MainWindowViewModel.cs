@@ -129,11 +129,16 @@ namespace TopDownWpfClient.ViewModels {
 						mainWindow.Visibility = Visibility.Collapsed;
 					});
 					game.Scale = WindowScale;
-					game.Run();
-					mainWindow.Dispatcher.Invoke(() => {
-						mainWindow.Visibility = Visibility.Visible;
-						mainWindow.Focus();
-					});
+					try {
+						game.Run();
+					} catch (Exception) {
+						//suppress all
+					} finally {
+						mainWindow.Dispatcher.Invoke(() => {
+							mainWindow.Visibility = Visibility.Visible;
+							mainWindow.Focus();
+						});
+					}
 				}
 			}).ContinueWith((t) => {
 				GUIEnabled = true;
@@ -155,7 +160,16 @@ namespace TopDownWpfClient.ViewModels {
 						mainWindow.Visibility = Visibility.Collapsed;
 					});
 					game.Scale = WindowScale;
-					game.Run();
+					try {
+						game.Run();
+					} catch (Exception) {
+						//suppress all
+					} finally {
+						mainWindow.Dispatcher.Invoke(() => {
+							mainWindow.Visibility = Visibility.Visible;
+							mainWindow.Focus();
+						});
+					}
 					mainWindow.Dispatcher.Invoke(() => {
 						mainWindow.Visibility = Visibility.Visible;
 						mainWindow.Focus();
