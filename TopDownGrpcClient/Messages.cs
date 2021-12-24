@@ -155,24 +155,24 @@ namespace TopDownGrpcClient
 
         public static string GetMap()
         {
-            var getMapCall = _client.GetMap(new Google.Protobuf.WellKnownTypes.Empty(), null, DateTime.UtcNow.AddSeconds(20));
+            var getMapCall = _client.GetMap(new Google.Protobuf.WellKnownTypes.Empty(), null, DateTime.UtcNow.AddSeconds(40));
             return getMapCall.MapStr;
         }
 
         public static List<(string, int, float, float)> GetEntities(string playerId)
         {
-            var getMapCall = _client.GetEntities(new PlayerId() { Id = playerId }, null, DateTime.UtcNow.AddSeconds(20));
+            var getMapCall = _client.GetEntities(new PlayerId() { Id = playerId }, null, DateTime.UtcNow.AddSeconds(40));
             return getMapCall.Entities.Select(p => (p.Id, p.Team, p.Position.X, p.Position.Y)).ToList();
         }
 
         public static string GetPlayerId()
         {
-            return _client.GetPlayerId(new Google.Protobuf.WellKnownTypes.Empty(), null, DateTime.UtcNow.AddSeconds(20)).Id;
+            return _client.GetPlayerId(new Google.Protobuf.WellKnownTypes.Empty(), null, DateTime.UtcNow.AddSeconds(40)).Id;
         }
 
         public static void SendGun(string playerId, int type)
         {
-            _client.SendGunType(new GunType() { PlayerId = playerId, Type = type }, null, DateTime.UtcNow.AddSeconds(20));
+            _client.SendGunType(new GunType() { PlayerId = playerId, Type = type }, null, DateTime.UtcNow.AddSeconds(40));
         }
     }
 }

@@ -42,7 +42,7 @@ namespace TopDown
                 if (StartGameTask == null)
                 {
                     stopLoading = new CancellationTokenSource();
-                    stopLoading.CancelAfter(20*1000);
+                    stopLoading.CancelAfter(60*1000);
                     StartGameTask = Task.Run(()=> InitializeServerPart(stopLoading));
                 }
 
