@@ -149,7 +149,7 @@ namespace TopDown
                     }
                     DeleteBulletsLocal();
                 }
-
+                EventsArgsProcess();
 
                 lock (Player)
                 {
@@ -161,7 +161,6 @@ namespace TopDown
                     cmPos.Y = cmPos.Y < -GameData.WindowSize.Y / 2 ? -GameData.WindowSize.Y / 2 : cmPos.Y;
                     GameData.Camera = Player.Rectangle.Center + cmPos * Constants.MaxCameraOffset;
                 }
-                EventsArgsProcess();
             }
 
             ESCPress();
