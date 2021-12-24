@@ -41,6 +41,7 @@ namespace TopDown
 
         public override void Initialize(MainGame game)
         {
+            game.Exiting += (sender, args) => { Exit(); };
             base.Initialize(game);
         }
 
@@ -707,6 +708,7 @@ namespace TopDown
         {
             Messages.RetrieveUpdateEvent -= ServerUpdate;
             Messages.PlayerDataEvent -= UpdatePlayerState;
+            Messages.Close();
 
             GameData.Clear();
             Positions.Clear();

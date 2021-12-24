@@ -27,7 +27,7 @@ namespace TopDownGrpcClient
 
         public static bool CanUpdate { get; set; } = false;
         public static CancellationTokenSource CanUpdateToken = new CancellationTokenSource();
-
+        private static AsyncServerStreamingCall<UpdateResponse> retrieveControlCall;
         public static void Initialize()
         {
             Close();
@@ -51,6 +51,7 @@ namespace TopDownGrpcClient
         public static void Close()
         {
             sendControllCall?.Dispose();
+            retrieveControlCall?.Dispose();
             _chanel?.ShutdownAsync().Wait();
             _chanel?.Dispose();
         }
@@ -113,7 +114,7 @@ namespace TopDownGrpcClient
         {
             try
             {
-                using var retrieveControlCall = _client.RetrieveUpdate(new PlayerId() { Id = playerId });
+                retrieveControlCall = _client.RetrieveUpdate(new PlayerId() { Id = playerId });
 
                 if (!CanUpdate)
                     CanUpdateToken.Token.WaitHandle.WaitOne();
@@ -149,6 +150,7 @@ namespace TopDownGrpcClient
             {
                 Exception = e;
             }
+            retrieveControlCall.Dispose();
         }
 
         public static string GetMap()
