@@ -160,8 +160,6 @@ namespace TopDownWpfClient.ViewModels {
 	        try {
 		        using TcpClient client = new TcpClient(ConfigurationManager.AppSettings["ServerMatchmakingAddress"]!, int.Parse(ConfigurationManager.AppSettings["ServerMatchmakingPort"]!));
 		        using var streamReader = new BinaryReader(client.GetStream());
-				using var streamWriter = new BinaryWriter(client.GetStream());
-				streamWriter.Write(1);
 				string address = streamReader.ReadString();
 				int port = streamReader.ReadInt32();
 				return (address, port);
