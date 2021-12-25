@@ -1,4 +1,8 @@
 ﻿using System;
+using System.Configuration;
+using System.IO;
+using System.Net;
+using System.Net.Sockets;
 using System.ServiceModel;
 using System.Threading.Tasks;
 using System.Windows;
@@ -6,7 +10,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
 using Microsoft.AnyContainer;
-using ServiceReference1;
 using TopDown;
 using TopDownGrpcClient;
 using TopDownWpfClient.Services.Pages;
@@ -44,7 +47,6 @@ namespace TopDownWpfClient.ViewModels {
 		private MainGame _game;
 
 		public MainWindowViewModel() {
-			// _game = new MainGame();
 			Instance = this;
 			var pageManager = StaticResolver.Resolve<IPageManager>();
 			_startPageVM = new StartPageViewModel();
@@ -95,17 +97,14 @@ namespace TopDownWpfClient.ViewModels {
 
 		private void SearchGame() {
 			GUIEnabled = false;
-			Status = "";
 			_ = Task.Run(() => {
 				//Get ServerAddress and ServerPort from TopDownMainServer
 				Status = "Searching server...";
 				(string, int) server;
-				try
-				{
+				try {
 					server = GetServer();
-				}
-				catch (Exception e)
-				{
+				} catch (Exception e) {
+					DebugLog += e.Message;
 					Status = "Error!";
 					return;
 				}
@@ -113,7 +112,7 @@ namespace TopDownWpfClient.ViewModels {
 				Messages.ServerAddress = server.Item1;
 				Messages.ServerPort = server.Item2;
 				if (string.IsNullOrEmpty(Messages.ServerAddress) || Messages.ServerPort < 0) {
-					Status = "Server didn't give correct ServerAddress or ServerPort";
+					Status = "MainServer didn't give correct GameServerAddress or GameServerPort";
 					return;
 				}
 
@@ -128,6 +127,7 @@ namespace TopDownWpfClient.ViewModels {
 					mainWindow.Visibility = Visibility.Visible;
 					mainWindow.Focus();
 				});
+				Status = "";
 			}).ContinueWith((t) => {
 				GUIEnabled = true;
 			});
@@ -157,10 +157,19 @@ namespace TopDownWpfClient.ViewModels {
 
 		private (string, int) GetServer()
         {
-			var serviceClient = new MyServiceClient(MyServiceClient.EndpointConfiguration.BasicHttpBinding_IMyService);
-			var serverResult = serviceClient.GetAvailableServerAsync();
-			serverResult.Wait();
-			return serverResult.Result;
+	        try {
+		        using TcpClient client = new TcpClient(ConfigurationManager.AppSettings["ServerMatchmakingAddress"]!, int.Parse(ConfigurationManager.AppSettings["ServerMatchmakingPort"]!));
+		        using var streamReader = new BinaryReader(client.GetStream());
+				string address = streamReader.ReadString();
+				int port = streamReader.ReadInt32();
+				return (address, port);
+	        }
+	        catch (Exception e)
+	        {
+		        Console.WriteLine(e);
+	        }
+
+	        return (null, -1);
         }
 	}
 }
