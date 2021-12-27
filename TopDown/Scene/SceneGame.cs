@@ -346,9 +346,9 @@ namespace TopDown
             lock (_inputDict)
             {
                 var deletedInputs = new List<int>();
-                if (_inputDict.Count > 50)
+                if (_inputDict.Count > 150)
                 {
-                    deletedInputs = _inputDict.OrderBy(i => i.Key).Skip(5).Select(x => x.Key).ToList();
+                    deletedInputs = _inputDict.OrderBy(i => i.Key).Skip(130).Select(x => x.Key).ToList();
                 }
                 foreach (var input in _inputDict.OrderBy(i => i.Key))
                 {
